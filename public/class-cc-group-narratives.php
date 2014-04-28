@@ -81,7 +81,24 @@ class CC_Group_Narratives {
 
 		// Load public-facing style sheet and JavaScript.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
+		// Load style sheet and JavaScript for narrative edit screen.
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_styles' ) );
+
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
+		// add_filter('media_view_strings', array( $this, 'custom_media_strings' ), 10, 2);
+		// add_action( 'wp_footer', array( $this, 'print_media_controller_templates' ), 98 );
+		
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_stripped_scripts' ), 98 );
+		// add_filter( 'media_view_settings', array( $this, 'my_media_view_settings'), 10, 2  );
+		// Override relevant media manager javascript functions
+		// add_action( 'wp_footer', array( $this, 'my_override_filter_object'), 51 );
+		// add_action( 'wp_ajax_query-attachments', array( $this, 'my_wp_ajax_query_attachments'), 1 );
+
+
 
 		/* Define custom functionality.
 		 * Refer To http://codex.wordpress.org/Plugin_API#Hooks.2C_Actions_and_Filters
@@ -299,7 +316,7 @@ class CC_Group_Narratives {
 	        'hierarchical' => false,
 	        'description' => 'Used to collect new posts ("Narratives") from spaces.',
 	        'supports' => array( 'title', 'editor', 'author', 'revisions' ),
-	        'taxonomies' => array( 'post_tag', 'related_groups' ),
+	        'taxonomies' => array( 'post_tag', 'ccgn_related_groups' ),
 	        'public' => true,
 	        'show_ui' => true,
 	        'show_in_menu' => true,
@@ -320,12 +337,12 @@ class CC_Group_Narratives {
 	/**
 	 * Creates the group story custom taxonomy.
 	 *
-	 * @since    1.0.0
+	 * @since    1.0.0d
 	 */
 	public function register_taxonomy_related_groups() {
 
 	    $labels = array( 
-	        'name' => _x( 'Related Groups', 'related_groups' ),
+	        'name' => _x( 'CCGN Related Groups', 'related_groups' ),
 	        'singular_name' => _x( 'Related Group', 'related_groups' ),
 	        'search_items' => _x( 'Search Related Groups', 'related_groups' ),
 	        'popular_items' => _x( 'Popular Related Groups', 'related_groups' ),
@@ -339,7 +356,7 @@ class CC_Group_Narratives {
 	        'separate_items_with_commas' => _x( 'Separate related groups with commas', 'related_groups' ),
 	        'add_or_remove_items' => _x( 'Add or remove related groups', 'related_groups' ),
 	        'choose_from_most_used' => _x( 'Choose from the most used related groups', 'related_groups' ),
-	        'menu_name' => _x( 'Related Groups', 'related_groups' ),
+	        'menu_name' => _x( 'CCGN Related Groups', 'related_groups' ),
 	    );
 
 	    $args = array( 
@@ -354,7 +371,7 @@ class CC_Group_Narratives {
 	        'query_var' => true
 	    );
 
-	    register_taxonomy( 'related_groups', array('group_story'), $args );
+	    register_taxonomy( 'ccgn_related_groups', array('group_story'), $args );
 	}
 
 	/**
@@ -363,8 +380,20 @@ class CC_Group_Narratives {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		wp_enqueue_style( $this->plugin_slug . '-plugin-styles', plugins_url( 'assets/css/public.css', __FILE__ ), array(), self::VERSION );
+		if ( function_exists( 'bp_is_groups_component' ) && ccgn_is_component() )
+			wp_enqueue_style( $this->plugin_slug . '-plugin-styles', plugins_url( 'assets/css/public.css', __FILE__ ), array(), self::VERSION );
 	}
+
+	/**
+	 * Register and enqueue public-facing edit style sheet.
+	 *
+	 * @since    1.0.0
+	 */
+	public function enqueue_edit_styles() {
+		if ( function_exists( 'bp_is_groups_component' ) && ccgn_is_post_edit() )
+			wp_enqueue_style( $this->plugin_slug . 'editor-plugin-styles', plugins_url( 'assets/css/edit.css', __FILE__ ), array(), self::VERSION );
+	}
+
 
 	/**
 	 * Register and enqueues public-facing JavaScript files.
@@ -375,6 +404,34 @@ class CC_Group_Narratives {
 		wp_enqueue_script( $this->plugin_slug . '-plugin-script', plugins_url( 'assets/js/public.js', __FILE__ ), array( 'jquery' ), self::VERSION );
 	}
 
+	/**
+	 * Register and enqueues JavaScript files necessary for group narrative edit page.
+	 *
+	 * @since    1.0.0
+	 */
+	public function enqueue_edit_scripts() {
+		if ( ccgn_is_post_edit() )  {
+
+			// wp_enqueue_media();
+			wp_enqueue_script( $this->plugin_slug . '-plugin-edit-script', plugins_url( 'assets/js/narrative-edit.js', __FILE__ ), array( 'jquery', 'underscore', 'backbone' ), self::VERSION );
+			add_action( 'wp_footer', array( $this, 'print_media_controller_templates' ) );
+
+		}
+	}
+
+	// add_action('admin_enqueue_scripts', 'custom_add_script');
+	public function enqueue_media_scripts(){
+		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu.js', __FILE__), array('media-views'), false, true);
+	}
+		// add_action('admin_enqueue_scripts', 'custom_add_script');
+	public function enqueue_media_stripped_scripts(){
+		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu_stripped.js', __FILE__), array( 'jquery', 'underscore', 'backbone' ), false, true);
+	}
+	public function custom_media_strings( $strings, $post ){
+		$strings['customMenuTitle'] = __('Custom Menu Title', 'custom');
+		$strings['customButton'] = __('Custom Button', 'custom');
+		return $strings;
+	}
 	/**
 	 * NOTE:  Actions are points in the execution of a page or process
 	 *        lifecycle that WordPress fires.
@@ -401,7 +458,7 @@ class CC_Group_Narratives {
 		// @TODO: Define your filter hook callback here
 	}
 
-	function ccgn_load_template_filter( $found_template, $templates ) {
+	public function ccgn_load_template_filter( $found_template, $templates ) {
 	    global $bp;
 	 
 	    // Only filter the template location when we're on the follow component pages.
@@ -438,4 +495,219 @@ class CC_Group_Narratives {
 	 
 	    return apply_filters( 'ccgn_load_template_filter', $found_template );
 	}
+
+	public function print_media_controller_templates() {
+	?>
+	<script type="text/html" id="tmpl-thing-details">
+		<div class="media-embed">
+			<div class="embed-media-settings">
+				<label class="setting">
+					<span><?php _e( 'Name' ); ?></span>
+					<input type="text" data-setting="name" value="{{ data.name }}" />
+				</label>
+				<label class="setting">
+					<span><?php _e( 'Favorite Color' ); ?></span>
+					<input type="text" data-setting="color" value="{{ data.color }}" />
+				</label>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/html" id="tmpl-thing-too">
+		<div class="media-embed">
+			<div class="embed-media-settings">
+				<p>Name: {{ data.model.name }}<br/>Favorite Color: {{ data.model.color }}</p>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/html" id="tmpl-editor-thing">
+		<div class="toolbar">
+			<div class="dashicons dashicons-edit edit"></div>
+			<div class="dashicons dashicons-no-alt remove"></div>
+		</div>
+		<p>Name: {{ data.name }}<br/>Favorite Color: {{ data.color }}</p>
+	</script>
+	<?php
+	}
+
+	public function my_media_view_settings($settings, $post) {
+    $towrite = PHP_EOL . 'before assignment: ' . print_r($settings, TRUE);    
+    $fp = fopen('media_view_settings.txt', 'a');
+    fwrite($fp, $towrite);
+    fclose($fp);
+
+	    $post_types = array('post' => 'Posts', 'page' => 'Pages');
+	     
+	    // Add in post types
+	    foreach ($post_types as $slug => $label) {
+	        if ($slug == 'attachment') continue;
+	        $settings['postTypes'][$slug] = $label; 
+	    }
+
+    $towrite = PHP_EOL . 'after assignment: ' . print_r($settings, TRUE);    
+    $fp = fopen('media_view_settings.txt', 'a');
+    fwrite($fp, $towrite);
+    fclose($fp);
+
+	    return $settings;   
+	}
+
+	public function my_override_filter_object() { ?>
+	    <script type="text/javascript">
+	    // Add custom post type filters
+	    l10n = wp.media.view.l10n = typeof _wpMediaViewsL10n === 'undefined' ? {} : _wpMediaViewsL10n;
+	    wp.media.view.AttachmentFilters.Uploaded.prototype.createFilters = function() {
+	        var type = this.model.get('type'),
+	            types = wp.media.view.settings.mimeTypes,
+	            text;
+	        if ( types && type )
+	            text = types[ type ];
+	 
+	        filters = {
+	            all: {
+	                text:  text || l10n.allMediaItems,
+	                props: {
+	                    uploadedTo: null,
+	                    orderby: 'date',
+	                    order:   'DESC'
+	                },
+	                priority: 10
+	            },
+	 
+	            uploaded: {
+	                text:  l10n.uploadedToThisPost,
+	                props: {
+	                    uploadedTo: wp.media.view.settings.post.id,
+	                    orderby: 'menuOrder',
+	                    order:   'ASC'
+	                },
+	                priority: 20
+	            }
+	        };
+	        // Add post types only for gallery
+	        if (this.options.controller._state.indexOf('gallery') !== -1) {
+	            delete(filters.all);
+	            filters.image = {
+	                text:  'Images',
+	                props: {
+	                    type:    'image',
+	                    uploadedTo: null,
+	                    orderby: 'date',
+	                    order:   'DESC'
+	                },
+	                priority: 10
+	            };
+	            _.each( wp.media.view.settings.postTypes || {}, function( text, key ) {
+	                filters[ key ] = {
+	                    text: text,
+	                    props: {
+	                        type:    key,
+	                        uploadedTo: null,
+	                        orderby: 'date',
+	                        order:   'DESC'
+	                    }
+	                };
+	            });
+	        }
+	        this.filters = filters;
+	         
+	    }; // End create filters
+	    </script>
+	<?php 
+	}
+
+	public function my_wp_ajax_query_attachments() {
+	    if ( ! current_user_can( 'upload_files' ) )
+	        wp_send_json_error();
+	 
+	    $query = isset( $_REQUEST['query'] ) ? (array) $_REQUEST['query'] : array();
+	    $query = array_intersect_key( $query, array_flip( array(
+	        's', 'order', 'orderby', 'posts_per_page', 'paged', 'post_mime_type',
+	        'post_parent', 'post__in', 'post__not_in',
+	    ) ) );
+	 
+	    if (isset($query['post_mime_type']) && ($query['post_mime_type'] != "image")) {
+	        // post type
+	        $query['post_type'] = $query['post_mime_type'];
+	        $query['post_status'] = 'publish';
+	        unset($query['post_mime_type']);
+	    } else { 
+	        // image
+	        $query['post_type'] = 'attachment';
+	        $query['post_status'] = 'inherit';
+	        if ( current_user_can( get_post_type_object( 'attachment' )->cap->read_private_posts ) )
+	            $query['post_status'] .= ',private';
+	    }
+	     
+	    $query = apply_filters( 'ajax_query_attachments_args', $query );
+	    $query = new WP_Query( $query );
+	 
+	    // $posts = array_map( 'wp_prepare_attachment_for_js', $query->posts );
+	    $posts = array_map( $this->my_prepare_items_for_js, $query->posts );
+	    $posts = array_filter( $posts );
+	 
+	    wp_send_json_success( $posts );
+	}
+
+	function my_prepare_items_for_js($item) {
+	    switch($item->post_type) {
+	    case 'attachment':
+	        return wp_prepare_attachment_for_js($item);
+	    case 'post':
+	    case 'page':
+	    case 'gallery':
+	    default:
+	        return $this->my_prepare_post_for_js($item);
+	    }
+	}
+ 
+	function my_prepare_post_for_js( $post ) {
+	    if ( ! $post = get_post( $post ) )
+	        return;
+	 
+	    $attachment_id = get_post_thumbnail_id( $post->ID );
+	    $attachment = get_post($attachment_id);
+	    $post_link = get_permalink( $post->ID );
+	 
+	    $type = $post->post_type; $subtype = 'none';
+	    if ($attachment) {
+	        $url = wp_get_attachment_url( $attachment->ID );
+	    } else { // Show default image
+	        $url = includes_url('images/crystal/default.png');
+	    }
+	     
+	    $response = array(
+	        'id'          => $post->ID,
+	        'title'       => $post->post_title, 
+	        'filename'    => wp_basename( $post_link ), 
+	        'url'         => $url,
+	        'link'        => $post_link,
+	        'alt'         => '',
+	        'author'      => $post->post_author,
+	        'description' => $post->post_content,
+	        'caption'     => $post->post_excerpt,
+	        'name'        => $post->post_name,
+	        'status'      => $post->post_status,
+	        'uploadedTo'  => $post->post_parent,
+	        'date'        => strtotime( $post->post_date_gmt ) * 1000,
+	        'modified'    => strtotime( $post->post_modified_gmt ) * 1000,
+	        'menuOrder'   => '', // $attachment->menu_order,
+	        'mime'        => '', // $attachment->post_mime_type,
+	        'type'        => $type,
+	        'subtype'     => $subtype,
+	        'icon'        => $url, // wp_mime_type_icon( $attachment_id ),
+	        'dateFormatted' => mysql2date( get_option('date_format'), $post->post_date ),
+	        'nonces'      => array(
+	            'update' => false,
+	            'delete' => false,
+	        ),
+	        'editLink'   => false,
+	    );
+	 
+	    // Don't allow delete or update for posts. So don't create nonces.
+	     
+	    return apply_filters( 'wp_prepare_post_for_js', $response, $post );
+	}
+
 }

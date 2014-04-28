@@ -1,0 +1,11 @@
+/* This stylesheet is used to style the narrative edit page of the plugin. */
+form.standard-form .info {
+	font-style: italic;
+	margin-bottom: 0;
+}
+form.standard-form .ccgn-related-groups li {
+	list-style-type: none;
+}
+form.standard-form .ccgn-related-groups li label {
+	margin-top:0;
+}

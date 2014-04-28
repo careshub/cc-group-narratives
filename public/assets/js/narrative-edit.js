@@ -1,0 +1,163 @@
+/*globals window, document, $, jQuery, _, Backbone */
+(function ($, _, Backbone) {
+	"use strict";
+	var media = wp.media,
+
+	ThingDetailsController = media.controller.State.extend({
+		defaults: {
+			id: 'thing-details',
+			title: 'Thing Details!',
+			toolbar: 'thing-details',
+			content: 'thing-details',
+			menu: 'thing-details',
+			router: false,
+			priority: 60
+		},
+
+		initialize: function( options ) {
+			this.thing = options.thing;
+			media.controller.State.prototype.initialize.apply( this, arguments );
+		}
+	});
+
+	ThingDetailsView = media.view.Settings.AttachmentDisplay.extend({
+		className: 'thing-details',
+		template:  media.template( 'thing-details' ),
+		prepare: function() {
+			return _.defaults( {
+				model: this.model.toJSON()
+			}, this.options );
+		}
+	});
+
+	ThingDetailsFrame = media.view.MediaFrame.Select.extend({
+		defaults: {
+			id:      'thing',
+			url:     '',
+			type:    'link',
+			title:   'Thing!',
+			priority: 120
+		},
+
+		initialize: function( options ) {
+			this.thing = new Backbone.Model( options.metadata );
+			this.options.selection = new media.model.Selection( this.thing.attachment, { multiple: false } );
+			media.view.MediaFrame.Select.prototype.initialize.apply( this, arguments );
+		},
+
+		bindHandlers: function() {
+			media.view.MediaFrame.Select.prototype.bindHandlers.apply( this, arguments );
+
+			this.on( 'menu:create:thing-details', this.createMenu, this );
+			this.on( 'content:render:thing-details', this.contentDetailsRender, this );
+			this.on( 'content:render:thing-too', this.contentTooRender, this );
+			this.on( 'menu:render:thing-details', this.menuRender, this );
+			this.on( 'toolbar:render:thing-details', this.toolbarRender, this );
+			this.on( 'toolbar:render:thing-too', this.toolbarTooRender, this );
+		},
+
+		contentDetailsRender: function() {
+			var view = new ThingDetailsView({
+				controller: this,
+				model: this.state().thing,
+				attachment: this.state().thing.attachment
+			}).render();
+
+			this.content.set( view );
+		},
+
+		menuRender: function( view ) {
+			var lastState = this.lastState(),
+				previous = lastState && lastState.id,
+				frame = this;
+
+			view.set({
+				cancel: {
+					text: 'Cancel!',
+					priority: 20,
+					click: function() {
+						if ( previous ) {
+							frame.setState( previous );
+						} else {
+							frame.close();
+						}
+					}
+				},
+				separateCancel: new media.View({
+					className: 'separator',
+					priority: 40
+				})
+			});
+		},
+
+		toolbarRender: function() {
+			this.toolbar.set( new media.view.Toolbar({
+				controller: this,
+				items: {
+					button: {
+						style:    'primary',
+						text:     'Update Thing!',
+						priority: 80,
+						click:    function() {
+							var controller = this.controller;
+							controller.close();
+							controller.state().trigger( 'update', controller.thing.toJSON() );
+							controller.setState( controller.options.state );
+							controller.reset();
+						}
+					}
+				}
+			}) );
+		},
+
+		createStates: function() {
+			this.states.add([
+				new ThingDetailsController( {
+					thing: this.thing
+				} ),
+			]);
+		}
+	});
+
+	thing = {
+		coerce : media.coerce,
+
+		defaults : {
+			name : '',
+			color : ''
+		},
+
+		edit : function ( data ) {
+			var frame, shortcode = wp.shortcode.next( 'thing', data ).shortcode;
+			frame = new ThingDetailsFrame({
+				frame: 'thing',
+				state: 'thing-details',
+				metadata: _.defaults( shortcode.attrs.named, thing.defaults )
+			});
+
+			return frame;
+		},
+
+		shortcode : function( model ) {
+			var self = this, content;
+
+			_.each( thing.defaults, function( value, key ) {
+				model[ key ] = self.coerce( model, key );
+
+				if ( value === model[ key ] ) {
+					delete model[ key ];
+				}
+			});
+
+			content = model.content;
+			delete model.content;
+
+			return new wp.shortcode({
+				tag: 'thing',
+				attrs: model,
+				content: content
+			});
+		}
+	};
+
+}(jQuery, _, Backbone));
