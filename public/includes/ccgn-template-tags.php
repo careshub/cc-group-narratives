@@ -75,9 +75,6 @@ add_action( 'ccgn_post_actions', 'ccgn_moderate_post_link' );
 function ccgn_moderate_post_link() {
     $post_id = get_the_ID();
 
-    if ( ccgn_current_user_can_moderate( $post_id ) ) {
-        // var_dump($post);
-        //TODO: This would probably be easiest to do using AJAX
-        echo '<a href="' . ccgn_get_home_permalink() . '/edit/' . $post_id . '" class="button">Remove from Group</a>';
-    }
+    if ( ccgn_current_user_can_moderate( $post_id ) )
+        echo '<a href="' . wp_nonce_url( ccgn_get_home_permalink() . '/remove-story/' . $post_id , 'ccgn-remove-story-from-group' ) . '" class="button confirm">' . __( 'Remove from group', 'ccgn-remove-story-from-group' ) . '</a>';
 }

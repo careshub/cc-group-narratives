@@ -56,7 +56,7 @@ function ccgn_get_level_to_post( $group_id = false ) {
     $group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
     $level_to_post = groups_get_groupmeta( $group_id, 'ccgn_level_to_post' );
     $level_to_post = !empty( $level_to_post ) ? $level_to_post : 'admin' ;
-    return apply_filters( 'ccgn_get_tab_label', $label);
+    return apply_filters( 'ccgn_get_tab_label', $level_to_post);
 }
 
 /**
@@ -74,7 +74,12 @@ function ccgn_current_user_can_post( $post_id = null ){
     $level_to_post = ccgn_get_level_to_post( $group_id );
     $can_post = false;
 
-    if ( $user_id ) {
+    // Grant permission if the user is a site admin
+    if ( $user_id )
+        $can_post = current_user_can( 'activate_plugins' );
+
+    // no need to check if the user is a site admin, or we don't know who the user is
+    if ( $user_id && ! $can_post) {
         switch ( $level_to_post ) {
             case 'member':
                 $can_post = groups_is_user_member( $user_id, $group_id );
@@ -112,7 +117,7 @@ function ccgn_current_user_can_moderate( $post_id = null ){
 
     // User must be a mod or admin in the current group (and the current group can't be the origin group)
     if ( ( $origin_group != $current_group ) && $user_id )
-        $can_mod = ( groups_is_user_admin( $user_id, $origin_group ) || groups_is_user_mod( $user_id, $origin_group ) );
+        $can_mod = ( current_user_can( 'activate_plugins' ) || groups_is_user_admin( $user_id, $origin_group ) || groups_is_user_mod( $user_id, $origin_group ) );
     
     return apply_filters( 'ccgn_current_user_can_moderate', $can_mod, $current_group, $origin_group, $user_id );
 }
@@ -133,6 +138,7 @@ function ccgn_get_categories( $group_id = false ) {
  */
 function ccgn_get_group_term_id( $group_id = false ) {
     $group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+    
     if ( $term = get_term_by( 'slug', ccgn_create_taxonomy_slug( $group_id ), 'ccgn_related_groups' ) ) {
         return $term->term_id;
     } else {
@@ -146,19 +152,11 @@ function ccgn_get_group_term_id( $group_id = false ) {
  * @return array of taxonomy ids
  */
 function ccgn_add_this_group_term( $terms, $group_term_id = null ) {
-    // var_dump($terms);
-    // var_dump($group_term_id);
     // Make sure that the terms argument is an array
-    $terms = ( !array( $terms ) ) ? (array) $terms : $terms;
+    $terms = ( ! is_array( $terms ) ) ? (array) $terms : $terms;
 
     $group_term_id = ( ! $group_term_id ) ? ccgn_get_group_term_id( bp_get_current_group_id() ) : $group_term_id;
     
-    // $towrite = PHP_EOL . 'in add this term, terms: ' . print_r( $terms, TRUE ); 
-    // $towrite .= PHP_EOL . 'this group term: ' . print_r( $group_term_id, TRUE ); 
-    // $fp = fopen('narrative-taxonomy.txt', 'a');
-    // fwrite($fp, $towrite);
-    // fclose($fp);
-
     // If $terms and $group_term_id aren't empty, merge them if necessary 
     if ( $terms && $group_term_id && ! in_array( $group_term_id, $terms ) ) {
         $terms = array_merge( $terms, (array) $group_term_id );
@@ -166,10 +164,6 @@ function ccgn_add_this_group_term( $terms, $group_term_id = null ) {
     } else if ( ! $terms && $group_term_id ) {
         $terms = (array) $group_term_id;
     }
-    // $towrite .= PHP_EOL . 'to return: ' . print_r( $terms, TRUE ); 
-    // $fp = fopen('narrative-taxonomy.txt', 'a');
-    // fwrite($fp, $towrite);
-    // fclose($fp);
 
     // Run intval on the values so that everything's saved as serialized arrays of integers.
     return array_map('intval', $terms);
@@ -295,7 +289,6 @@ function ccgn_get_query(){
     $paged = ( get_query_var('paged') ) ? get_query_var('paged') : 1;
     // $query= "related_groups=".$cats_list;
     $query = array(
-        'post_status' => array( 'publish', 'draft'),
         'post_type' => 'group_story',
         'tax_query' => array(
             array(
@@ -307,10 +300,8 @@ function ccgn_get_query(){
             )
         )
     );
-    $towrite = PHP_EOL . 'query array: ' . print_r( apply_filters( "ccgn_get_query", $query ), TRUE ); 
-    $fp = fopen('narrative-taxonomy.txt', 'a');
-    fwrite($fp, $towrite);
-    fclose($fp);
+    // Get draft posts for those who can edit, otherwise only show published stories
+    $query['post_status'] = ccgn_current_user_can_post() ? array( 'publish', 'draft') : array( 'publish' );
 
     return apply_filters( "ccgn_get_query", $query );
 }

@@ -68,13 +68,16 @@ class CC_Group_Narratives {
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 
 		// Load plugin custom post type and taxonomy
-		add_action( 'init', array( $this, 'register_cpt_group_story' ) );
-		add_action( 'init', array( $this, 'register_taxonomy_related_groups' ) );
+		// Needs to happen before bp_init! (bp_init happens at 'init' p10)
+		add_action( 'init', array( $this, 'register_cpt_group_story' ), 7 );
+		add_action( 'init', array( $this, 'register_taxonomy_related_groups' ), 7 );
 
 		//Filter plugin template
 		//TODO: finish template stack logic
 		add_filter( 'bp_located_template', array( $this, 'ccgn_load_template_filter'), 10, 2 );
 
+		// Add filter to catch removal of a story from a group
+		add_action( 'bp_init', array( $this, 'remove_story_from_group'), 75 );
 
 		// Activate plugin when new blog is added
 		add_action( 'wpmu_new_blog', array( $this, 'activate_new_site' ) );
@@ -494,6 +497,47 @@ class CC_Group_Narratives {
 	    }
 	 
 	    return apply_filters( 'ccgn_load_template_filter', $found_template );
+	}
+
+	public function remove_story_from_group() {
+		// Fires on bp_init action, so this is a catch-action type of filter.
+		// Bail out if this isn't the narrative component.
+		if ( ! ccgn_is_component() )
+			return false;
+
+	    // Set up an array of BP's action variables
+		$action_variables = bp_action_variables();
+
+		//Handle delete actions: Removing story from group
+		if ( bp_is_action_variable( 'remove-story', 0 ) ) {
+
+			// Is the nonce good?
+			if ( ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'ccgn-remove-story-from-group' ) )
+				return false;
+
+			// Parse the URI to create our necessary variables
+			$post_id = bp_action_variable( 1 );
+
+			// Is this user allowed to remove this item?
+			if ( ! ccgn_current_user_can_moderate( $post_id ) )
+				return false;
+
+		   	// Get this group's term and disassociate it from the post
+		    if ( $group_term_id = ccgn_get_group_term_id() )
+		    	$success = wp_remove_object_terms( $post_id, $group_term_id, 'ccgn_related_groups' );
+
+		    if ( $success && ! is_wp_error( $success ) ) {
+   				bp_core_add_message( __( 'Successfully removed the item.', $this->plugin_slug ) );
+		    } else {
+				bp_core_add_message( __( 'Could not remove the item.', $this->plugin_slug ), 'error' );
+		    }
+
+			// Redirect and exit
+			bp_core_redirect( wp_get_referer() );
+
+			return false;
+		} 
+
 	}
 
 	public function print_media_controller_templates() {
