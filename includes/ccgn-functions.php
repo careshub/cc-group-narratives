@@ -78,7 +78,7 @@ function ccgn_current_user_can_post( $post_id = null ){
     if ( $user_id )
         $can_post = current_user_can( 'activate_plugins' );
 
-    // no need to check if the user is a site admin, or we don't know who the user is
+    // No need to check if the user is a site admin, or we don't know who the user is
     if ( $user_id && ! $can_post) {
         switch ( $level_to_post ) {
             case 'member':

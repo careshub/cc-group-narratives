@@ -31,7 +31,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
         parent::init( $args );
     }
  
-    function display() {
+    public function display() {
       // Template location is handled via the template stack. see ccgn_load_template_filter()
 
       // bp_get_template_part( 'groups/single/narratives' );
@@ -47,7 +47,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
       // }
     }
  
-    function settings_screen( $group_id ) {
+    public function settings_screen( $group_id = null ) {
         // $group_id = bp_get_group_id( $group_id );
         $is_enabled = ccgn_is_enabled( $group_id );
         $tab_label = ccgn_get_tab_label( $group_id );
@@ -147,7 +147,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
     <?php
     }
  
-    function settings_screen_save( $group_id ) {
+    public function settings_screen_save( $group_id = null ) {
       // First, set up a new taxonomy term if this group doesn't already have one. Kind of painful since we want to keep this list hierarchical. Two options: update existing term or create new. (Updating could be useful for fixing hierarchy problems.)
       if ( $_POST["ccgn_is_enabled"] ) {
         // Are we using BP Group Hierarchy?
