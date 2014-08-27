@@ -1,19 +1,16 @@
 <?php
 /**
- * Plugin Name.
- *
  * @package   CC Group Narratives Admin
- * @author    David Cavins
+ * @author    CARES staff
  * @license   GPL-2.0+
- * @link      http://example.com
- * @copyright 2014 Your Name or Company Name
+ * @copyright 2014 CommmunityCommons.org
  */
 
 /**
  * Plugin class. This class should ideally be used to work with the
  * administrative side of the WordPress site.
  *
- * @package Plugin_Name_Admin
+ * @package CC Group Narratives Admin
  * @author  David Cavins
  */
 class CC_Group_Narratives_Admin {

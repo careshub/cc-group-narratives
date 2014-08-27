@@ -1,22 +1,15 @@
 <?php
 /**
- * Plugin Name.
- *
  * @package   CC Group Narratives
- * @author    David Cavins
+ * @author    CARES staff
  * @license   GPL-2.0+
- * @link      http://example.com
- * @copyright 2014 Your Name or Company Name
+ * @copyright 2014 CommmunityCommons.org
  */
 
 /**
  * Plugin class. This class should ideally be used to work with the
  * public-facing side of the WordPress site.
  *
- * If you're interested in introducing administrative or dashboard
- * functionality, then refer to `class-plugin-name-admin.php`
- *
- * @TODO: Rename this class to a proper name for your plugin.
  *
  * @package CC Group Narratives
  * @author  David Cavins
@@ -101,6 +94,10 @@ class CC_Group_Narratives {
 		// add_action( 'wp_footer', array( $this, 'my_override_filter_object'), 51 );
 		// add_action( 'wp_ajax_query-attachments', array( $this, 'my_wp_ajax_query_attachments'), 1 );
 
+		// We need to stop the evaluation of shortcodes on this plugin's group settings screen. If they're interpreted for display, then the code is consumed and lost upon the next save.
+		add_action( 'bp_init', array( $this, 'remove_shortcode_filter_on_settings_screen') );
+
+
 
 
 		/* Define custom functionality.
@@ -109,7 +106,7 @@ class CC_Group_Narratives {
 		// add_action( '@TODO', array( $this, 'action_method_name' ) );
 		// add_filter( '@TODO', array( $this, 'filter_method_name' ) );
 
-		require_once( plugin_dir_path( __FILE__ ) . '/includes/ccgn-template-tags.php' );
+		require_once( plugin_dir_path( __FILE__ ) . '/views/public.php' );
 
 
 	}
@@ -538,6 +535,12 @@ class CC_Group_Narratives {
 			return false;
 		} 
 
+	}
+
+	public function remove_shortcode_filter_on_settings_screen() {
+	      if ( ccgn_is_post_edit() ) {
+	        	remove_filter( 'the_content', 'do_shortcode', 11);
+	      }
 	}
 
 	public function print_media_controller_templates() {

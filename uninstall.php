@@ -1,12 +1,9 @@
 <?php
 /**
- * Fired when the plugin is uninstalled.
- *
- * @package   Plugin_Name
- * @author    Your Name <email@example.com>
+ * @package   CC Group Narratives
+ * @author    CARES staff
  * @license   GPL-2.0+
- * @link      http://example.com
- * @copyright 2014 Your Name or Company Name
+ * @copyright 2014 CommmunityCommons.org
  */
 
 // If uninstall not called from WordPress, then exit
