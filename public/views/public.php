@@ -67,7 +67,7 @@ function ccgn_group_origin_statement( $post_id = null ) {
     $group_name = bp_get_group_name( $origin_group );
     $group_permalink = bp_get_group_permalink( $origin_group );
 
-    echo '<span class="origin-group meta">Posted in the group <a href="' . $group_permalink . '">' .  $group_name . '</a>.</span>';
+    echo '<span class="origin-group meta">Posted in the hub <a href="' . $group_permalink . '">' .  $group_name . '</a>.</span>';
 }
 
 add_action( 'ccgn_post_actions', 'ccgn_edit_post_link' );
@@ -88,5 +88,5 @@ function ccgn_moderate_post_link() {
     $post_id = get_the_ID();
 
     if ( ccgn_current_user_can_moderate( $post_id ) )
-        echo '<a href="' . wp_nonce_url( ccgn_get_home_permalink() . '/remove-story/' . $post_id , 'ccgn-remove-story-from-group' ) . '" class="button confirm">' . __( 'Remove from group', 'ccgn-remove-story-from-group' ) . '</a>';
+        echo '<a href="' . wp_nonce_url( ccgn_get_home_permalink() . '/remove-story/' . $post_id , 'ccgn-remove-story-from-group' ) . '" class="button confirm">' . __( 'Remove from hub', 'ccgn-remove-story-from-group' ) . '</a>';
 }
