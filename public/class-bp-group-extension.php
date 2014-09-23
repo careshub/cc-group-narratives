@@ -14,7 +14,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 		function __construct() {
 				$args = array(
 					'slug' => ccgn_get_slug(),
-					'name' => 'Group Narratives',
+					'name' => 'Hub Narratives',
 					// 'visibility' => 'public',
 					// 'enable_nav_item'   => true,//ccgn_is_enabled(),
 					'access' => 'anyone', // BP 2.1 means anyone can visit the tab regardless of group status
