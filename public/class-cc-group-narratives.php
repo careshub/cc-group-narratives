@@ -65,6 +65,9 @@ class CC_Group_Narratives {
 		add_action( 'init', array( $this, 'register_cpt_group_story' ), 7 );
 		add_action( 'init', array( $this, 'register_taxonomy_related_groups' ), 7 );
 
+		// Modify permalinks so that they point to the story as persented in the origin group
+		add_filter( 'post_type_link', array( $this, 'narrative_permalink_filter'), 10, 2);
+
 		//Filter plugin template
 		//TODO: finish template stack logic
 		add_filter( 'bp_located_template', array( $this, 'ccgn_load_template_filter'), 10, 2 );
@@ -83,6 +86,13 @@ class CC_Group_Narratives {
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_styles' ) );
 
+		// We need to stop the evaluation of shortcodes on this plugin's group settings screen. If they're interpreted for display, then the code is consumed and lost upon the next save.
+		add_action( 'bp_init', array( $this, 'remove_shortcode_filter_on_settings_screen') );
+
+		// Handle redirects after submitting a comment
+		// Typically the user is redirected to the permalink location, but, in this case, we want to redirect back to the referring page (the permalink might go to a different group).
+		add_action( 'comment_form', array( $this, 'comments_add_redirect_to' ) );
+
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
 		// add_filter('media_view_strings', array( $this, 'custom_media_strings' ), 10, 2);
@@ -94,17 +104,16 @@ class CC_Group_Narratives {
 		// add_action( 'wp_footer', array( $this, 'my_override_filter_object'), 51 );
 		// add_action( 'wp_ajax_query-attachments', array( $this, 'my_wp_ajax_query_attachments'), 1 );
 
-		// We need to stop the evaluation of shortcodes on this plugin's group settings screen. If they're interpreted for display, then the code is consumed and lost upon the next save.
-		add_action( 'bp_init', array( $this, 'remove_shortcode_filter_on_settings_screen') );
-
-
-
-
 		/* Define custom functionality.
 		 * Refer To http://codex.wordpress.org/Plugin_API#Hooks.2C_Actions_and_Filters
 		 */
 		// add_action( '@TODO', array( $this, 'action_method_name' ) );
 		// add_filter( '@TODO', array( $this, 'filter_method_name' ) );
+
+		// @TODOs: Features to add
+		// Post locking while the post is being edited. 
+			// Set a transient on loading the form (match the transient set by the typical WP editor)
+			// Clear it on page unload. How to avoid fogotten locks? heartbeat API?
 
 		require_once( plugin_dir_path( __FILE__ ) . '/views/public.php' );
 
@@ -315,7 +324,7 @@ class CC_Group_Narratives {
 	        'labels' => $labels,
 	        'hierarchical' => false,
 	        'description' => 'Used to collect new posts ("Narratives") from spaces.',
-	        'supports' => array( 'title', 'editor', 'author', 'revisions' ),
+	        'supports' => array( 'title', 'editor', 'author', 'revisions', 'comments' ),
 	        'taxonomies' => array( 'post_tag', 'ccgn_related_groups' ),
 	        'public' => true,
 	        'show_ui' => true,
@@ -327,7 +336,7 @@ class CC_Group_Narratives {
 	        'has_archive' => true,
 	        'query_var' => true,
 	        'can_export' => true,
-	        'rewrite' => true,
+	        'rewrite' => false,
 	        'capability_type' => 'post'
 	    );
 
@@ -337,7 +346,7 @@ class CC_Group_Narratives {
 	/**
 	 * Creates the group story custom taxonomy.
 	 *
-	 * @since    1.0.0d
+	 * @since    1.0.0
 	 */
 	public function register_taxonomy_related_groups() {
 
@@ -372,6 +381,21 @@ class CC_Group_Narratives {
 	    );
 
 	    register_taxonomy( 'ccgn_related_groups', array('group_story'), $args );
+	}
+
+	/**
+	 * Creates the rewrites necessary so that the group is really where this stuff lives.
+	 *
+	 * @since    1.0.0
+	 */
+	function narrative_permalink_filter( $permalink, $post ) {
+	 
+	    if ( 'group_story' == get_post_type( $post )  ) {
+	    	$group_id = ccgn_get_origin_group( $post->ID );
+	        $permalink = ccgn_get_base_permalink( $group_id ) . $post->post_name;
+	    }
+
+	    return $permalink;
 	}
 
 	/**
@@ -419,19 +443,6 @@ class CC_Group_Narratives {
 		}
 	}
 
-	// add_action('admin_enqueue_scripts', 'custom_add_script');
-	public function enqueue_media_scripts(){
-		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu.js', __FILE__), array('media-views'), false, true);
-	}
-		// add_action('admin_enqueue_scripts', 'custom_add_script');
-	public function enqueue_media_stripped_scripts(){
-		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu_stripped.js', __FILE__), array( 'jquery', 'underscore', 'backbone' ), false, true);
-	}
-	public function custom_media_strings( $strings, $post ){
-		$strings['customMenuTitle'] = __('Custom Menu Title', 'custom');
-		$strings['customButton'] = __('Custom Button', 'custom');
-		return $strings;
-	}
 	/**
 	 * NOTE:  Actions are points in the execution of a page or process
 	 *        lifecycle that WordPress fires.
@@ -458,6 +469,11 @@ class CC_Group_Narratives {
 		// @TODO: Define your filter hook callback here
 	}
 
+	/**
+	 * Register and enqueue public-facing style sheet.
+	 *
+	 * @since    1.0.0
+	 */
 	public function ccgn_load_template_filter( $found_template, $templates ) {
 	    global $bp;
 	 
@@ -496,6 +512,11 @@ class CC_Group_Narratives {
 	    return apply_filters( 'ccgn_load_template_filter', $found_template );
 	}
 
+	/**
+	 * Add filter to catch removal of a story from a group
+	 *
+	 * @since    1.0.0
+	 */
 	public function remove_story_from_group() {
 		// Fires on bp_init action, so this is a catch-action type of filter.
 		// Bail out if this isn't the narrative component.
@@ -537,10 +558,50 @@ class CC_Group_Narratives {
 
 	}
 
+	/**
+	 * We need to stop the evaluation of shortcodes on this plugin's group settings screen. 
+	 * If they're interpreted for display, then the code is consumed and lost upon the next save.
+	 *
+	 * @since    1.0.0
+	 */
 	public function remove_shortcode_filter_on_settings_screen() {
 	      if ( ccgn_is_post_edit() ) {
 	        	remove_filter( 'the_content', 'do_shortcode', 11);
 	      }
+	}
+
+	/**
+	 * Add a hidden "redirect_to" input on the comment form if it's a group story 
+	 * This ensures that commenters are returned to the url they commented from.
+	 * (And not swept away to the origin group's view of the post.)
+	 *
+	 * @since    1.0.0
+	 */
+	public function comments_add_redirect_to( $post_id ){
+		if ( 'group_story' != get_post_type( $post )  )
+			return;
+
+		$current_url = home_url( $_SERVER['REQUEST_URI'] );
+		?>
+		<input type="hidden" name="redirect_to" value="<?php echo $current_url ?>" />
+		<?php 
+	}
+
+	/* Work on media popup below ******************************************/
+
+
+	// add_action('admin_enqueue_scripts', 'custom_add_script');
+	public function enqueue_media_scripts(){
+		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu.js', __FILE__), array('media-views'), false, true);
+	}
+	// add_action('admin_enqueue_scripts', 'custom_add_script');
+	public function enqueue_media_stripped_scripts(){
+		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu_stripped.js', __FILE__), array( 'jquery', 'underscore', 'backbone' ), false, true);
+	}
+	public function custom_media_strings( $strings, $post ){
+		$strings['customMenuTitle'] = __('Custom Menu Title', 'custom');
+		$strings['customButton'] = __('Custom Button', 'custom');
+		return $strings;
 	}
 
 	public function print_media_controller_templates() {

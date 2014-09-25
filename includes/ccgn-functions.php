@@ -39,15 +39,24 @@ function ccgn_is_enabled( $group_id = false ) {
  * @return string: slug
  */
 function ccgn_get_slug( $group_id = false ) {
-	// It's not a great idea to allow this to change per-group
+	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+	$slug = groups_get_groupmeta( $group_id, 'ccgn_url_slug' );
+	$slug = !empty( $slug ) ? urlencode( $slug ) : 'narratives' ;
 
-	// $group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
-	// $slug = groups_get_groupmeta( $group_id, 'ccgn_url_slug' );
-	// $slug = !empty( $slug ) ? urlencode( $slug ) : 'narratives' ;
-
-	$slug = 'narratives' ;
-	
 	return apply_filters( 'ccgn_get_slug', $slug);
+}
+
+/**
+ * Get the permalink of the Narratives tab if set
+ * 
+ * @return string: URI
+ */
+function ccgn_get_base_permalink( $group_id = false ){
+	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+	$group_slug = bp_get_group_permalink( groups_get_group( array( 'group_id' => $group_id ) ) );
+    $permalink = $group_slug . ccgn_get_slug( $group_id ) . '/';
+
+    return apply_filters( 'ccgn_base_permalink', $permalink, $group_id );
 }
 
 
@@ -367,7 +376,6 @@ function ccgn_is_post_edit(){
 
 	return false;
 }
-// TODO: Is this used anywhere?
 function ccgn_get_post_form( $group_id = false ){
 	$group_id = ( ! $group_id ) ? bp_get_current_group_id() : $group_id ;
 	
@@ -396,6 +404,7 @@ function ccgn_get_post_form( $group_id = false ){
 			$post_content = $post->post_content;
 			$post_title = $post->post_title;
 			$post_published = $post->post_status;
+			$comment_status = $post->comment_status;
 		}
 	}
 
@@ -409,7 +418,7 @@ function ccgn_get_post_form( $group_id = false ){
 
 	<form enctype="multipart/form-data" action="<?php echo ccgn_get_home_permalink() . "/edit/" . $post_id; ?>" method="post" class="standard-form">
 
-		<label for="ccgn_title">Title: <input type="text" value="<?php echo apply_filters( "the_title", $post_title ); ?>" name="ccgn_title"></label>
+		<label for="ccgn_title">Title: <input type="text" value="<?php echo apply_filters( "the_title", $post_title ); ?>" name="ccgn_title" size="80"></label>
 	
 		<?php
 		$args = array(
@@ -438,6 +447,10 @@ function ccgn_get_post_form( $group_id = false ){
 			</select>
 		</p>
 
+		<p>
+			<label for="ccgn_comment_status"> <input type="checkbox" value="open" id="ccgn_comment_status" name="ccgn_comment_status" <?php checked( $comment_status, 'open' ) ?>> Allow comments on this post.</label>
+		</p>
+
 		<input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
 		<!-- This is created for the media modal to reference 
 		TODO: This doesn't work.-->
@@ -454,6 +467,7 @@ function ccgn_save_narrative( $group_id ) {
 	//WP's update_post function does a bunch of data cleaning, so we can leave validation to that.
 	$published_status = in_array( $_POST['ccgn_published'], array( 'publish', 'draft' ) ) ? $_POST['ccgn_published'] : 'draft';
 	$title = isset( $_POST['ccgn_title'] ) ? $_POST['ccgn_title'] : 'Draft Narrative';
+	$comment_status = isset( $_POST['ccgn_comment_status'] ) ? 'open' : 'closed';
 
 	$args = array(
 		'post_title' => $title,
@@ -461,6 +475,7 @@ function ccgn_save_narrative( $group_id ) {
 		'post_name' => sanitize_title( $title ),
 		'post_type' => 'group_story',
 		'post_status' => $published_status,
+		'comment_status' => $comment_status,
 
 	);
 

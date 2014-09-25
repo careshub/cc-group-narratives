@@ -15,10 +15,8 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 				$args = array(
 					'slug' => ccgn_get_slug(),
 					'name' => 'Hub Narratives',
-					// 'visibility' => 'public',
-					// 'enable_nav_item'   => true,//ccgn_is_enabled(),
-					'access' => 'anyone', // BP 2.1 means anyone can visit the tab regardless of group status
-					'show_tab' => 'anyone', // BP 2.1 means anyone can see the nav tab regardless of group status
+					'access' => 'anyone', // @since BuddyPress 2.1: means anyone can visit the tab regardless of group status
+					'show_tab' => ccgn_is_enabled() ? 'anyone' : 'noone', // @since BuddyPress 2.1: means anyone can see the nav tab regardless of group status
 					'nav_item_position' => 105,
 					'nav_item_name' => ccgn_get_tab_label(),
 					'screens' => array(
@@ -99,11 +97,11 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 								<option <?php selected( $level_to_post, "member" ); ?> value="member">Any Group Member</option> 
 							</select>
 					 </p>
-					 <?php
 
-					// TODO Maybe only site admins should be able to add other groups
+					 <p>Select other groups that narratives published in this group could be syndicated to.</p>
+					 <?php
+					// @TODO: Maybe only site admins should be able to add other groups
 					// Handle group associations, which are a taxonomy
-					echo "<p>Select other groups that narratives published in this group could be syndicated to.</p>";
 
 					// Get the syndicated groups selected for this group, add this group's term.
 					$selected_terms = ccgn_add_this_group_term( ccgn_get_categories( $group_id ), ccgn_get_group_term_id( $group_id ) );
@@ -189,27 +187,28 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 				}
 			} // End "is_enabled" check
 
-			$towrite = PHP_EOL . 'submitted: ' . print_r($_POST['tax_input']['ccgn_related_groups'], TRUE); 
-			$towrite .= PHP_EOL . 'this group term: ' . print_r($term_array['term_id'], TRUE); 
-			$fp = fopen('narrative-taxonomy.txt', 'a');
-			fwrite($fp, $towrite);
-			fclose($fp);
+			// $towrite = PHP_EOL . 'submitted: ' . print_r($_POST['tax_input']['ccgn_related_groups'], TRUE); 
+			// $towrite .= PHP_EOL . 'this group term: ' . print_r($term_array['term_id'], TRUE); 
+			// $fp = fopen('narrative-taxonomy.txt', 'a');
+			// fwrite($fp, $towrite);
+			// fclose($fp);
 
 			// Next, handle relating the group to the right taxonomy terms
 			// Make sure that this group is always included - otherwise once the narrative is created it might disappear from the front end
 			// TODO: If only site admins can add terms, we may not want to change this unless the submitter is a site admin.
 			$group_relations = ccgn_add_this_group_term( $_POST['tax_input']['ccgn_related_groups'], $term_array['term_id'] );
 
-			$towrite = PHP_EOL . 'ready to save: ' . print_r($group_relations, TRUE);    
-			$fp = fopen('narrative-taxonomy.txt', 'a');
-			fwrite($fp, $towrite);
-			fclose($fp);
+			// $towrite = PHP_EOL . 'ready to save: ' . print_r($group_relations, TRUE);    
+			// $fp = fopen('narrative-taxonomy.txt', 'a');
+			// fwrite($fp, $towrite);
+			// fclose($fp);
 
 			if ( ! ccgn_update_categories( $group_id, $group_relations ) || ! ccgn_update_groupmeta( $group_id ) ) {
 				bp_core_add_message( __( 'There was an error updating the Group Narratives settings, please try again.', 'ccgn' ), 'error' );
 			} else {
 				bp_core_add_message( __( 'Group Narratives settings were successfully updated.', 'ccgn' ) );
 			}
+			// Redirect to the (possibly) new admin slug
 		}
 }
 bp_register_group_extension( 'CC_Group_Narratives_Extension' );
