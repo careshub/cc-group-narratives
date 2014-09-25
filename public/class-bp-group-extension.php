@@ -14,7 +14,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 		function __construct() {
 				$args = array(
 					'slug' => ccgn_get_slug(),
-					'name' => 'Hub Narratives',
+					'name' => 'Narratives',
 					'access' => 'anyone', // @since BuddyPress 2.1: means anyone can visit the tab regardless of group status
 					'show_tab' => ccgn_is_enabled() ? 'anyone' : 'noone', // @since BuddyPress 2.1: means anyone can see the nav tab regardless of group status
 					'nav_item_position' => 105,
@@ -65,10 +65,10 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 				?>
 
 				<p>
-					Blog Categories for Groups allows your group to have a voice in this site&rsquo;s blog. If enabled, your group will be able to submit posts for publication within a specific category. Posts in this category (or categories) will also be displayed within your group&rsquo;s space.
+					Hub Narratives allows your hub to share stories and interact via comments with visitors to your hub space.
 				</p>
 				<p>
-					<label for="ccgn_is_enabled"> <input type="checkbox" name="ccgn_is_enabled" id="ccgn_is_enabled" value="1" <?php checked( $is_enabled, true ) ?> /> Enable group narratives for this group.</label>
+					<label for="ccgn_is_enabled"> <input type="checkbox" name="ccgn_is_enabled" id="ccgn_is_enabled" value="1" <?php checked( $is_enabled, true ) ?> /> Enable hub narratives.</label>
 				</p>
 
 				<?php 
@@ -78,7 +78,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 					<div id="ccgn_settings_details">
 	 
 					<p>
-							<label for='ccgn_tab_label'>Change the BuddyPress group tab label from 'Narratives' to whatever you'd like.</label>
+							<label for='ccgn_tab_label'>Change the BuddyPress hub tab label from 'Narratives' to whatever you'd like.</label>
 							<input type="text" name="ccgn_tab_label" id="ccgn_tab_label" value="<?php echo esc_html( $tab_label ); ?>" />
 					 </p>
 					 <?php /* ?>
@@ -90,11 +90,11 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 					<p>
 							<label for='ccgn_level_to_post'>Who should be able to create new posts?</label>
 							<select name="ccgn_level_to_post" id="ccgn_level_to_post">
-								<option <?php selected( $level_to_post, "admin" ); ?> value="admin">Group Admins Only</option>
+								<option <?php selected( $level_to_post, "admin" ); ?> value="admin">Hub Admins Only</option>
 								<option <?php selected( $level_to_post, "mod" ); 
 												if ( empty( $level_to_post ) ) { echo 'selected="selected"' ; } 
-												?> value="mod">Group Admins and Moderators</option>
-								<option <?php selected( $level_to_post, "member" ); ?> value="member">Any Group Member</option> 
+												?> value="mod">Hub Admins and Moderators</option>
+								<option <?php selected( $level_to_post, "member" ); ?> value="member">Any Hub Member</option> 
 							</select>
 					 </p>
 
@@ -204,6 +204,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 			// fclose($fp);
 
 			if ( ! ccgn_update_categories( $group_id, $group_relations ) || ! ccgn_update_groupmeta( $group_id ) ) {
+				// @TODO: This might be returning a false positive error - meta and cat updates are weird.
 				bp_core_add_message( __( 'There was an error updating the Group Narratives settings, please try again.', 'ccgn' ), 'error' );
 			} else {
 				bp_core_add_message( __( 'Group Narratives settings were successfully updated.', 'ccgn' ) );

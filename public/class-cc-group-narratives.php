@@ -93,6 +93,12 @@ class CC_Group_Narratives {
 		// Typically the user is redirected to the permalink location, but, in this case, we want to redirect back to the referring page (the permalink might go to a different group).
 		add_action( 'comment_form', array( $this, 'comments_add_redirect_to' ) );
 
+		/* Filter "map_meta_caps" to let our users do things they normally can't, like upload media */
+		add_action( 'bp_init', array( $this, 'add_mmc_filter') );
+
+		/* Only allow users to see their own items in the media library uploader. */
+		add_action( 'pre_get_posts', array( $this, 'show_users_own_attachments') );
+
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
 		// add_filter('media_view_strings', array( $this, 'custom_media_strings' ), 10, 2);
@@ -114,6 +120,9 @@ class CC_Group_Narratives {
 		// Post locking while the post is being edited. 
 			// Set a transient on loading the form (match the transient set by the typical WP editor)
 			// Clear it on page unload. How to avoid fogotten locks? heartbeat API?
+		// Activity stream updates:
+			// Whomever created a new narrative
+			// updated a narrative -- avoid repeats.
 
 		require_once( plugin_dir_path( __FILE__ ) . '/views/public.php' );
 
@@ -585,6 +594,60 @@ class CC_Group_Narratives {
 		?>
 		<input type="hidden" name="redirect_to" value="<?php echo $current_url ?>" />
 		<?php 
+	}
+
+	/**
+	 * Filter "map_meta_caps" to let our users do things they normally can't.
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_mmc_filter() {
+		if ( ccgn_is_post_edit() || ( isset( $_POST['action'] ) && $_POST['action'] == 'upload-attachment' ) ) {
+		    add_filter( 'map_meta_cap', array( $this, 'setup_map_meta_cap' ), 14, 4 );
+		}
+	}
+
+	/**
+	 * Filter "map_meta_caps" to let our users do things they normally can't.
+	 * This enables the media button on the post edit form (allows an ordinary user to add media).
+	 *
+	 * @since    1.0.0
+	 */
+	public function setup_map_meta_cap( $primitive_caps, $meta_cap, $user_id, $args ) {	
+		// In order to upload media, a user needs to have caps.
+		// Check if this is a request we want to filter. 
+		if ( ! in_array( $meta_cap, array( 'upload_files', 'edit_post', 'delete_post' ) ) ) {  
+	        return $primitive_caps;  
+	    }
+
+		// It would be useful for a user to be able to delete her own uploaded media.
+	    // If this is someone else's post, we don't want to allow deletion of that, though.
+	    if ( $meta_cap == 'delete_post' && in_array( 'delete_others_posts', $primitive_caps ) ) {
+	        return $primitive_caps;  
+	    }
+
+	  	// We pass a blank array back, meaning there's no capability required.
+	    $primitive_caps = array();
+
+		return $primitive_caps;
+	}
+
+
+	/**
+	 * Only allow users to see their own items in the media library uploader.
+	 *
+	 * @since    1.0.0
+	 */
+	public function show_users_own_attachments( $wp_query_obj ) {
+	 
+		// The image library is populated via an AJAX request, so we'll check for that
+		if( isset( $_POST['action'] ) && $_POST['action'] == 'query-attachments' ) {
+
+			// If the user isn't a site admin, limit the image library to only show his images.
+			if( ! current_user_can( 'delete_pages' ) )
+			    $wp_query_obj->set( 'author', get_current_user_id() );
+
+		}
 	}
 
 	/* Work on media popup below ******************************************/
