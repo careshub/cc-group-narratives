@@ -23,7 +23,7 @@ class CC_Group_Narratives {
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 
 	/**
 	 *
@@ -97,7 +97,8 @@ class CC_Group_Narratives {
 
 		//Filter plugin template
 		//TODO: finish template stack logic - archive/search template???
-		add_filter( 'bp_located_template', array( $this, 'load_template_filter'), 10, 2 );
+		//TODO: Fails with BP group hierarcy
+		// add_filter( 'bp_located_template', array( $this, 'load_template_filter'), 10, 2 );
 
 
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );

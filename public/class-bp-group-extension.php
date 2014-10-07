@@ -40,7 +40,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 		public function display() {
 			// Template location is handled via the template stack. see ccgn_load_template_filter()
 
-			// bp_get_template_part( 'groups/single/narratives' );
+			bp_get_template_part( 'groups/single/narratives' );
 			// if( bcg_is_single_post() ) {
 			//   echo "is single post";
 			//   bp_get_template_part( 'ccgn/single-post.php' );
