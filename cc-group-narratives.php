@@ -11,7 +11,6 @@
  * Description:       Allows groups to contribute blog posts
  * Version:           1.0.0
  * Author:            CARES staff
- * Author URI:        @TODO
  * Text Domain:       plugin-name-locale
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt

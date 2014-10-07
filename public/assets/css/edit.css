@@ -1,11 +1,35 @@
 /* This stylesheet is used to style the narrative edit page of the plugin. */
-form.standard-form .info {
-	font-style: italic;
+.wp-editor-wrap {
+	margin-top: 1.8em;
+}
+.wp-editor-container {
+	border: 1px solid #dedede;
+}
+form.standard-form .ccgn-related-groups {
 	margin-bottom: 0;
 }
 form.standard-form .ccgn-related-groups li {
 	list-style-type: none;
+	margin-bottom: 0;
+	margin-left: 1em;
+	padding-bottom: 0;
 }
 form.standard-form .ccgn-related-groups li label {
-	margin-top:0;
+	margin-top: 0;
+}
+.mce-btn button:hover {
+	border: none;
+}
+form.standard-form .narrative-meta {
+	margin-top: 1.8em;
+}
+form.standard-form .narrative-meta p {
+	margin-bottom: 1em;
+}
+form.standard-form .narrative-meta label {
+	margin-top: 1.8em;
+}
+form.standard-form .narrative-meta .info {
+	/*font-style: italic;*/
+	margin-bottom: 0;
 }

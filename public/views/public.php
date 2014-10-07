@@ -90,3 +90,23 @@ function ccgn_moderate_post_link() {
     if ( ccgn_current_user_can_moderate( $post_id ) )
         echo '<a href="' . wp_nonce_url( ccgn_get_home_permalink() . '/remove-story/' . $post_id , 'ccgn-remove-story-from-group' ) . '" class="button confirm">' . __( 'Remove from hub', 'ccgn-remove-story-from-group' ) . '</a>';
 }
+
+// Shortcode to output the BP-doc preview for use in narratives.
+// Not currently using this - went the route of adding docs to the links menu.
+add_shortcode( 'bp-doc', 'ccgn_bp_doc_shortcode_output' );
+function ccgn_bp_doc_shortcode_output( $attr, $content = null ) {
+    $retval = '';
+    extract( shortcode_atts( array( 'id' => 0 ), $attr ) );
+
+    // Only build the doc preview if anyone can read it.
+    $settings = bp_docs_get_doc_settings( $id );
+    if ( $settings['read'] == 'anyone') {
+        $doc = get_post( $id, 'OBJECT', 'display' );
+        if ( ! empty( $doc ) ) {
+            $retval  = '<span class="bp-doc-preview">';
+            $retval .= 'Library item: <a href="' . get_permalink( $id ) . '">' . $doc->post_title . '</a>';
+            $retval .= '</span>';
+        }
+    }
+    return $retval;
+}

@@ -418,38 +418,46 @@ function ccgn_get_post_form( $group_id = false ){
 
 	<form enctype="multipart/form-data" action="<?php echo ccgn_get_home_permalink() . "/edit/" . $post_id; ?>" method="post" class="standard-form">
 
-		<label for="ccgn_title">Title: <input type="text" value="<?php echo apply_filters( "the_title", $post_title ); ?>" name="ccgn_title" size="80"></label>
+		<label for="ccgn_title">Title&emsp;<input type="text" value="<?php echo apply_filters( "the_title", $post_title ); ?>" name="ccgn_title" size="80"></label>
 	
 		<?php
 		$args = array(
 				// 'textarea_rows' => 100,
 				// 'teeny' => true,
 				// 'quicktags' => false
+				'tinymce' => true,
 				'media_buttons' => true,
 				'editor_height' => 360,
 				'tabfocus_elements' => 'insert-media-button,save-post',
 			);
 			wp_editor( $post_content, 'ccgn_content', $args); 
 		?>
-		<div id="ccgn_categories" class="ccgn_category_checkboxes">
-			<h4>Syndication</h4>
-			<p class="info">Choose the groups that this narrative should be published to.</p>
-			<?php ccgn_related_group_checkboxes( $group_id, $post_id ); ?>
+
+		<div class="narrative-meta">
+			<div id="ccgn_categories" class="ccgn_category_checkboxes">
+				<p class="info">Choose the groups to which this narrative should be published.</p>
+				<?php ccgn_related_group_checkboxes( $group_id, $post_id ); ?>
+			</div>
+
+			<p>
+				<label for="ccgn_published">Published Status</label>
+				<select name="ccgn_published" id="ccgn_published">
+					<option value="publish" <?php selected( $post_published, "publish" ); ?>>Published</option>
+					<option  value="draft" <?php
+						if ( empty( $post_published ) || $post_published == 'draft' ) { 
+							echo 'selected="selected"' ; 
+						} 
+						?>>Draft</option>
+				</select>
+			</p>
+
+			<p>
+				<label for="ccgn_comment_status"> <input type="checkbox" value="open" id="ccgn_comment_status" name="ccgn_comment_status" <?php 
+				if ( empty( $comment_status ) || $comment_status == 'open' ) { 
+					echo 'checked="checked"'; 
+				} ?>> Allow comments on this post.</label>
+			</p>
 		</div>
-
-		<p>
-			<label for="ccgn_published">Published Status</label>
-			<select name="ccgn_published" id="ccgn_published">
-				<option <?php selected( $post_published, "publish" ); ?> value="publish">Published</option>
-				<option <?php selected( $post_published, "draft" ); 
-					if ( empty( $post_published ) ) { echo 'selected="selected"' ; } 
-					?> value="draft">Draft</option>
-			</select>
-		</p>
-
-		<p>
-			<label for="ccgn_comment_status"> <input type="checkbox" value="open" id="ccgn_comment_status" name="ccgn_comment_status" <?php checked( $comment_status, 'open' ) ?>> Allow comments on this post.</label>
-		</p>
 
 		<input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
 		<!-- This is created for the media modal to reference 
@@ -563,4 +571,51 @@ function my_plugin_image_selected($html, $send_id, $attachment) {
 function ccgn_create_taxonomy_slug( $group_id = null ) {
 	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
 	return 'ccgn_related_group_' . $group_id;
+}
+
+function ccgn_get_shareable_docs( $group_id = null ) {
+	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+	$docs_args = array( 'group_id' => $group_id );
+	$good_docs = array();
+
+    if ( function_exists('bp_docs_has_docs') && bp_docs_has_docs( $docs_args ) ) :
+        while ( bp_docs_has_docs() ) : 
+            bp_docs_the_doc();
+            //Only allow to attach docs that have read set to anyone.
+            $doc_id = get_the_ID();
+            $settings = bp_docs_get_doc_settings( $doc_id );
+            if ( $settings['read'] == 'anyone') { 
+				$good_docs[] = array(
+					'ID' 		=> $doc_id,
+					'title' 	=> get_the_title(),
+					'permalink' => get_the_permalink(),
+					'info' 		=> 'Doc',
+					'datetime'	=> get_the_date('Ymd'),
+					);    
+            }   
+        endwhile;
+    endif;
+
+    return $good_docs;
+}
+
+function ccgn_get_shareable_maps_reports( $group_id = null, $type = 'map' ) {
+	$results = array();
+
+	if ( !function_exists('commons_group_library_pane_get_saved_maps_reports_for_group') )
+		return $results;
+
+	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+	$items = commons_group_library_pane_get_saved_maps_reports_for_group( $group_id, $type );
+
+	foreach ($items as $item) {
+		$results[] = array(
+			'ID' 		=> $item['id'],
+			'title' 	=> $item['title'],
+			'permalink' => $item['link'],
+			'info' 		=> ucfirst( $type ),
+			'datetime'	=> date( 'Ymd', strtotime( $item['savedate'] ) ),
+		);    
+	}
+	return $results;
 }

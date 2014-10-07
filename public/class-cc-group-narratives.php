@@ -68,10 +68,6 @@ class CC_Group_Narratives {
 		// Modify permalinks so that they point to the story as persented in the origin group
 		add_filter( 'post_type_link', array( $this, 'narrative_permalink_filter'), 10, 2);
 
-		//Filter plugin template
-		//TODO: finish template stack logic
-		add_filter( 'bp_located_template', array( $this, 'ccgn_load_template_filter'), 10, 2 );
-
 		// Add filter to catch removal of a story from a group
 		add_action( 'bp_init', array( $this, 'remove_story_from_group'), 75 );
 
@@ -99,6 +95,11 @@ class CC_Group_Narratives {
 		/* Only allow users to see their own items in the media library uploader. */
 		add_action( 'pre_get_posts', array( $this, 'show_users_own_attachments') );
 
+		//Filter plugin template
+		//TODO: finish template stack logic - archive/search template???
+		add_filter( 'bp_located_template', array( $this, 'load_template_filter'), 10, 2 );
+
+
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
 		// add_filter('media_view_strings', array( $this, 'custom_media_strings' ), 10, 2);
@@ -123,6 +124,18 @@ class CC_Group_Narratives {
 		// Activity stream updates:
 			// Whomever created a new narrative
 			// updated a narrative -- avoid repeats.
+
+		// add_action( 'wp_footer', array( $this, 'print_media_templates' ) );
+  //       add_action( 'wp_footer', array( $this, 'print_footer_scripts' ), 100 );
+	 //    add_action( 'wp_ajax_dtbaker_mce_banner_button', array( $this, 'wp_ajax_dtbaker_mce_banner_button' ) );
+	    // add_filter("mce_external_plugins", array($this, 'mce_plugin'));
+	    // add_filter("mce_buttons", array($this, 'mce_button'));
+
+	    // Change behavior of link button in wp_editor
+	    // First, remove many of the post types from the query
+	    add_filter( 'wp_link_query_args', array( $this, 'limit_link_suggestion_query' ) );
+	    // Add back in docs, maps & reports
+	    add_filter( 'wp_link_query', array( $this, 'filter_link_suggestions' ), 14, 2 );
 
 		require_once( plugin_dir_path( __FILE__ ) . '/views/public.php' );
 
@@ -444,11 +457,9 @@ class CC_Group_Narratives {
 	 */
 	public function enqueue_edit_scripts() {
 		if ( ccgn_is_post_edit() )  {
-
 			// wp_enqueue_media();
-			wp_enqueue_script( $this->plugin_slug . '-plugin-edit-script', plugins_url( 'assets/js/narrative-edit.js', __FILE__ ), array( 'jquery', 'underscore', 'backbone' ), self::VERSION );
-			add_action( 'wp_footer', array( $this, 'print_media_controller_templates' ) );
-
+			wp_enqueue_script( $this->plugin_slug . '-plugin-edit-script', plugins_url( 'assets/js/narrative-edit.js', __FILE__ ), array( 'jquery', 'underscore', 'backbone', 'mce-view' ), self::VERSION );
+			// add_action( 'wp_footer', array( $this, 'print_media_controller_templates' ) );
 		}
 	}
 
@@ -476,49 +487,6 @@ class CC_Group_Narratives {
 	 */
 	public function filter_method_name() {
 		// @TODO: Define your filter hook callback here
-	}
-
-	/**
-	 * Register and enqueue public-facing style sheet.
-	 *
-	 * @since    1.0.0
-	 */
-	public function ccgn_load_template_filter( $found_template, $templates ) {
-	    global $bp;
-	 
-	    // Only filter the template location when we're on the follow component pages.
-	    if ( ! ccgn_is_component() )
-	        return $found_template;
-	 
-	    // $found_template is not empty when the older template files are found in the
-	    // parent and child theme
-	    //
-	    // When the older template files are not found, we use our new template method,
-	    // which will act more like a template part.
-	    if ( empty( $found_template ) ) {
-	 
-	        // register our theme compat directory
-	        //
-	        // this tells BP to look for templates in our plugin directory last
-	        // when the template isn't found in the parent / child theme
-	        bp_register_template_stack( 'ccgn_get_template_directory', 14 );
-	 
-	        // plugins.php is the preferred template to use, since all we'd need to do is
-	        // inject our content into BP
-	        //
-	        // note: this is only really relevant for bp-default themes as theme compat
-	        // will kick in on its own when this template isn't found
-	        $found_template = locate_template( 'groups/single/plugins.php', false, false );
-	 
-	        // add our hook to inject content into BP
-	        //
-	        // note the new template name for our template part
-	        add_action( 'bp_template_content', create_function( '', "
-	            bp_get_template_part( 'groups/single/narratives' );
-	        " ) );
-	    }
-	 
-	    return apply_filters( 'ccgn_load_template_filter', $found_template );
 	}
 
 	/**
@@ -650,17 +618,161 @@ class CC_Group_Narratives {
 		}
 	}
 
+	/** TEMPLATE LOADER ************************************************/
+	/**
+	* If a template does not exist in the current theme, we will use our own
+	* bundled templates.
+	*
+	* We're doing two things here:
+	* 1) Support the older template format for themes that are using them
+	* for backwards-compatibility (the template passed in
+	* {@link bp_core_load_template()}).
+	* 2) Route older template names to use our new template locations and
+	* format.
+	*
+	* From work by r-a-y
+	*
+	* @since 1.1
+	*/
+	function load_template_filter( $found_template, $templates ) {
+		// Only filter the template location when we're on the group invitation screen, the group creation invite-anyone step, or the members component
+		if ( ! ccgn_is_component() )
+			return $found_template;
+
+		// $found_template may not empty if template files were found in the
+		// parent or child theme
+		if ( empty( $found_template ) ) {
+			// locate_template() will attempt to find the plugins.php template in the
+			// child and parent theme and return the located template when found
+			$found_template = locate_template( '/groups/single/plugins.php', false, false );
+		}
+
+		// Register our theme compat directory.
+		// This tells BP to look for templates in our plugin directory 
+		// if the template isn't found in the parent/child theme.
+		bp_register_template_stack( array( $this, 'get_template_directory' ), 14 );
+
+		if ( 1 == 1 ) {
+			// add our hook to inject content into BP's group screen
+			add_action( 'bp_template_content', create_function( '', "
+				bp_get_template_part( 'groups/single/narratives' );
+			" ) );
+		}
+
+		return apply_filters( 'ccgn_load_template_filter', $found_template );
+	}
+
+	/**
+	* Get the template directory.
+	*
+	* @since 1.1
+	*
+	* @uses apply_filters()
+	* @return string
+	*/
+	function get_template_directory() {
+	return apply_filters( 'ccgn_get_template_directory', plugin_dir_path( __FILE__ ) . 'includes/templates' );
+	}
+
+	/**
+	* Change what populates the "link to existing content" box in the wp_editor instance.
+	*
+	* @since 1.1
+	*
+	* @uses apply_filters()
+	* @return string
+	*/
+	function limit_link_suggestion_query( $query ) {
+
+		if ( ! ccgn_is_post_edit() )
+			return $query;
+
+	    // $towrite = PHP_EOL . 'group id: ' . print_r( bp_get_current_group_id(), TRUE );    
+	    // $towrite .= PHP_EOL . 'query, before' .  print_r($query, TRUE);
+	    // Limit the post types that are queried
+	    // We'll want to include bp_docs and group_stories, but they have weird queries (group-related) so we'll add them back in at the 'wp_link_query' filter.
+	    $query['post_type'] = array(); 
+
+   	    // If the search is included in the query, wp will find nothing and things break. Nice.
+   	    if ( isset( $query['s'] ) ) {
+	   	    $query['keyphrase'] = $query['s'];
+	   	    unset( $query['s'] );
+	   	}
+
+   	 //    $towrite .= PHP_EOL . 'query, after' .  print_r($query, TRUE);    
+ 	   //  $fp = fopen('link-to.txt', 'a');
+	    // fwrite($fp, $towrite);
+	    // fclose($fp);
+
+	    return $query;
+	}
+
+	/**
+	* Change what populates the "link to existing content" box in the wp_editor instance.
+	*
+	* @since 1.1
+	*
+	* @uses apply_filters()
+	* @return string
+	*/
+	function filter_link_suggestions( $results, $query ) {
+
+		if ( ! ccgn_is_post_edit() )
+			return $results;
+
+		// We're replacing the suggestions, so start with a blank slate.
+		$results = array();
+
+		// Fetch allowable bp_docs, maps, reports
+		$docs = ccgn_get_shareable_docs();
+		$maps = ccgn_get_shareable_maps_reports( $group_id = null, $type = 'map' );
+		$reports = ccgn_get_shareable_maps_reports( $group_id = null, $type = 'report' );
+
+		$results = array_merge( $docs, $maps, $reports );
+
+		// Sort the results by datetime, descending
+		// Create the sort column array for array_multisort to use
+		foreach ( $results as $key => $value ) {
+		    $datetime[$key]  = $value['datetime'];
+		}
+		// Add $results as the last parameter, to sort by the common key
+		array_multisort( $datetime, SORT_DESC, $results );
+
+		// Oh, handle search terms if included. Not awesome (doesn't search content).
+		if ( isset( $query['keyphrase'] ) ) {
+			$found = array();
+			foreach ($results as $result) {
+				if ( stripos( $result['title'], $query['keyphrase'] ) !== false ) {
+					$found[] = $result;
+				}
+			}
+			$results = $found;
+		}
+
+		// Return the correct records, based on the query.
+		$results = array_slice( $results, $query['offset'], $query['posts_per_page'] );
+
+	    // $towrite = PHP_EOL . 'results' . print_r($results, TRUE);
+   	    // $towrite .= PHP_EOL . 'query' . print_r($query, TRUE);    
+  	    // $fp = fopen('link-to.txt', 'a');
+	    // fwrite($fp, $towrite);
+	    // fclose($fp);
+
+	    return $results;
+	}
+	
 	/* Work on media popup below ******************************************/
 
 
 	// add_action('admin_enqueue_scripts', 'custom_add_script');
 	public function enqueue_media_scripts(){
-		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu.js', __FILE__), array('media-views'), false, true);
+		// wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu.js', __FILE__), array('media-views'), false, true);
 	}
 	// add_action('admin_enqueue_scripts', 'custom_add_script');
 	public function enqueue_media_stripped_scripts(){
-		wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu_stripped.js', __FILE__), array( 'jquery', 'underscore', 'backbone' ), false, true);
+		// wp_enqueue_script('cc-narrative-media-menu', plugins_url('assets/js/media_menu_stripped.js', __FILE__), array( 'jquery', 'underscore', 'backbone' ), false, true);
 	}
+	/*
 	public function custom_media_strings( $strings, $post ){
 		$strings['customMenuTitle'] = __('Custom Menu Title', 'custom');
 		$strings['customButton'] = __('Custom Button', 'custom');
@@ -880,5 +992,120 @@ class CC_Group_Narratives {
 	     
 	    return apply_filters( 'wp_prepare_post_for_js', $response, $post );
 	}
+	*/
+
+	/**
+     * Outputs the view inside the wordpress editor.
+     */
+    public function print_media_templates() {
+        // if ( ! isset( get_current_screen()->id ) || get_current_screen()->base != 'post' )
+        //     return;
+        ?>
+        <script type="text/html" id="tmpl-editor-boutique-banner">
+			<div class="boutique_banner_{{ data.type }}"></div>
+	        <div class="full_banner" id="banner_{{ data.id }}">
+			    <span class="title">{{ data.title }}</span>
+			    <span class="content">{{ data.innercontent }}</span>
+		        <# if ( data.link ) { #>
+		            <# if ( data.linkhref ) { #>
+			            <a href="{{ data.linkhref }}" class="link dtbaker_button_light">{{ data.link }}</a>
+					<# } #>
+				<# } #>
+			</div>
+		</script>
+        <?php
+    }
+    public function print_footer_scripts() {
+        // if ( ! isset( get_current_screen()->id ) || get_current_screen()->base != 'post' )
+        //     return;
+        ?>
+	    <script type="text/javascript">
+		    (function($){
+			    var media = wp.media, shortcode_string = 'boutique_banner';
+			    wp.mce = wp.mce || {};
+			    wp.mce.boutique_banner = {
+				    shortcode_data: {},
+					View: {
+						template: media.template( 'editor-boutique-banner' ),
+						postID: $('#post_ID').val(),
+						initialize: function( options ) {
+							this.shortcode = options.shortcode;
+							wp.mce.boutique_banner.shortcode_data = this.shortcode;
+
+						},
+						getHtml: function() {
+							var options = this.shortcode.attrs.named;
+							options['innercontent'] = this.shortcode.content;
+							return this.template(options);
+						}
+					},
+				    edit: function( node ) {
+						var data = window.decodeURIComponent( $( node ).attr('data-wpview-text') );
+					    console.debug(this);
+					    var values = this.shortcode_data.attrs.named;
+						values['innercontent'] = this.shortcode_data.content;
+					    console.log(values);
+
+					    wp.mce.boutique_banner.popupwindow(tinyMCE.activeEditor, values);
+						//$( node ).attr( 'data-wpview-text', window.encodeURIComponent( shortcode ) );
+					},
+				    // this is called from our tinymce plugin, also can call from our "edit" function above
+				    // wp.mce.boutique_banner.popupwindow(tinyMCE.activeEditor, "bird");
+				    popupwindow: function(editor, values, onsubmit_callback){
+					    if(typeof onsubmit_callback != 'function'){
+						    onsubmit_callback = function( e ) {
+		                        // Insert content when the window form is submitted (this also replaces during edit, handy!)
+							    var s = '[' + shortcode_string;
+							    for(var i in e.data){
+								    if(e.data.hasOwnProperty(i) && i != 'innercontent'){
+									    s += ' ' + i + '="' + e.data[i] + '"';
+								    }
+							    }
+							    s += ']';
+							    if(typeof e.data.innercontent != 'undefined'){
+								    s += e.data.innercontent;
+								    s += '[/' + shortcode_string + ']';
+							    }
+		                        editor.insertContent( s );
+		                    };
+					    }
+		                editor.windowManager.open( {
+		                    title: 'Banner',
+		                    body: [
+			                    {
+			                        type: 'textbox',
+			                        name: 'title',
+			                        label: 'Title',
+				                    value: values['title']
+		                        },
+			                    {
+			                        type: 'textbox',
+			                        name: 'link',
+			                        label: 'Button Text',
+				                    value: values['link']
+		                        },
+			                    {
+			                        type: 'textbox',
+			                        name: 'linkhref',
+			                        label: 'Button URL',
+				                    value: values['linkhref']
+		                        },
+			                    {
+			                        type: 'textbox',
+			                        name: 'innercontent',
+			                        label: 'Content',
+				                    value: values['innercontent']
+		                        }
+		                    ],
+		                    onsubmit: onsubmit_callback
+		                } );
+				    }
+				};
+			    wp.mce.views.register( shortcode_string, wp.mce.boutique_banner );
+			}(jQuery));
+	    </script>
+
+        <?php
+    }
 
 }
