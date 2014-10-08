@@ -302,10 +302,9 @@ function ccgn_update_groupmeta( $group_id = false ) {
  * 
  * @return boolean
  */
-function ccgn_get_query(){
-	$bp = buddypress();
- 	
- 	// For single post, get the post by the slug
+function ccgn_get_query( $group_id = null, $status = null ) {
+
+  	// For single post, get the post by the slug
 	if( ccgn_is_single_post() ){
 		$query = array(
 			'name' => $bp->action_variables[0],
@@ -313,6 +312,7 @@ function ccgn_get_query(){
 			'post_status' => array( 'publish', 'draft'),
 		);		
 	} else {
+		$group_id = ( ! $group_id ) ? bp_get_current_group_id() : $group_id;
 		// Not a single post, this is the list of narratives for a group.
 		// TODO: Finish pagination
 		$paged = ( get_query_var('paged') ) ? get_query_var('paged') : 1;
@@ -323,14 +323,22 @@ function ccgn_get_query(){
 				array(
 					'taxonomy' => 'ccgn_related_groups',
 					'field' => 'id',
-					'terms' => ccgn_get_group_term_id( $bp->groups->current_group->id ),
+					'terms' => ccgn_get_group_term_id( $group_id ),
 					'include_children' => false,
 					// 'operator' => 'IN'
 				)
 			)
 		);
-		// Get draft posts for those who can edit, otherwise only show published stories
-		$query['post_status'] = ccgn_current_user_can_post() ? array( 'publish', 'draft') : array( 'publish' );
+
+		// If the status is specified, respect it, otherwise use the user's abilities to determine.
+		if ( $status == 'draft' ) {
+			$query['post_status'] = array( 'publish', 'draft');
+		} else if ( $status == 'publish' ) {
+			$query['post_status'] = array( 'publish' );
+		} else {
+			// Get draft posts for those who can edit, otherwise only show published stories
+			$query['post_status'] = ccgn_current_user_can_post() ? array( 'publish', 'draft') : array( 'publish' );
+		}
 	}
 
 	return apply_filters( "ccgn_get_query", $query );
@@ -619,3 +627,15 @@ function ccgn_get_shareable_maps_reports( $group_id = null, $type = 'map' ) {
 	}
 	return $results;
 }
+/**
+* Get an array of narratives for a particular group.
+* @param group_id - integer
+* @param status - empty, 'publish' or 'draft'
+* @return array of post objects
+*/
+function ccgn_get_narratives_for_group( $group_id = null, $status = null  ) {
+
+	$posts = get_posts( ccgn_get_query( $group_id, $status ) );
+
+	return $posts;
+} 
