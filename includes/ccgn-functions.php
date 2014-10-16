@@ -39,11 +39,13 @@ function ccgn_is_enabled( $group_id = false ) {
  * @return string: slug
  */
 function ccgn_get_slug( $group_id = false ) {
-	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
-	$slug = groups_get_groupmeta( $group_id, 'ccgn_url_slug' );
-	$slug = !empty( $slug ) ? urlencode( $slug ) : 'narratives' ;
+	// We're going to stick with narratives for all groups.
+	return 'narratives';
+	// $group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
+	// $slug = groups_get_groupmeta( $group_id, 'ccgn_url_slug' );
+	// $slug = !empty( $slug ) ? urlencode( $slug ) : 'narratives' ;
 
-	return apply_filters( 'ccgn_get_slug', $slug);
+	// return apply_filters( 'ccgn_get_slug', $slug);
 }
 
 /**
