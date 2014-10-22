@@ -309,9 +309,9 @@ function ccgn_get_query( $group_id = null, $status = null ) {
   	// For single post, get the post by the slug
 	if( ccgn_is_single_post() ){
 		$query = array(
-			'name' => $bp->action_variables[0],
+			'name' => bp_action_variable( 0 ),
 			'post_type' => 'group_story',
-			'post_status' => array( 'publish', 'draft'),
+			// 'post_status' => array( 'publish', 'draft'),
 		);		
 	} else {
 		$group_id = ( ! $group_id ) ? bp_get_current_group_id() : $group_id;
@@ -528,55 +528,7 @@ function ccgn_save_narrative( $group_id ) {
 	}
 }
 
-// Media modal functionality
-function wpse_76980_add_upload_tab( $tabs ) {
-	$newtab = array( 'super_duper' => 'Super Duper' );
-	return array_merge( $tabs, $newtab );
-}
-// add_filter( 'media_upload_tabs', 'wpse_76980_add_upload_tab' );
 
-function wpse_76980_media_upload() {
-	// display tab contents
-	$good_docs = cc_get_associatable_bp_docs_narrative_form( 2 );
-	print_r($good_docs);
-	foreach ($good_docs as $doc) {
-		echo '<input type="checkbox">';
-		print_r($doc);
-		echo '<br/>';
-		# code...
-	}
-			print_r($_GET);
-			print_r($_REQUEST);
-
-}
-// add_action( 'media_upload_super_duper', 'wpse_76980_media_upload' );
-
-// add_filter('attachment_fields_to_edit', 'my_plugin_action_button', 20, 2);
-// add_filter('media_send_to_editor', 'my_plugin_image_selected', 10, 3);
- 
-function my_plugin_action_button($form_fields, $post) {
- 
-		$send = "<input type='submit' class='button' name='send[$post->ID]' value='" . esc_attr__( 'Use as Default' ) . "' />";
- 
-	$form_fields['buttons'] = array('tr' => "\t\t<tr class='submit'><td></td><td class='savesend'>$send</td></tr>\n");
-	$form_fields['context'] = array( 'input' => 'hidden', 'value' => 'shiba-gallery-default-image' );
-	return $form_fields;
-}
- 
-function my_plugin_image_selected($html, $send_id, $attachment) {
-	?>
-	<script type="text/javascript">
-	/* <![CDATA[ */
-	var win = window.dialogArguments || opener || parent || top;
-				 
-	win.jQuery( '#default_image' ).val('<?php echo $send_id;?>');
-	// submit the form
-	win.jQuery( '#shiba-gallery_options' ).submit();
-	/* ]]> */
-	</script>
-	<?php
-	exit();
-}
 // Helper function to build the taxonomy slug
 function ccgn_create_taxonomy_slug( $group_id = null ) {
 	$group_id = !( $group_id ) ? bp_get_current_group_id() : $group_id ;
@@ -641,3 +593,53 @@ function ccgn_get_narratives_for_group( $group_id = null, $status = null  ) {
 
 	return $posts;
 } 
+
+// Media modal functionality - probably not helpful
+function wpse_76980_add_upload_tab( $tabs ) {
+	$newtab = array( 'super_duper' => 'Super Duper' );
+	return array_merge( $tabs, $newtab );
+}
+// add_filter( 'media_upload_tabs', 'wpse_76980_add_upload_tab' );
+
+function wpse_76980_media_upload() {
+	// display tab contents
+	$good_docs = cc_get_associatable_bp_docs_narrative_form( 2 );
+	print_r($good_docs);
+	foreach ($good_docs as $doc) {
+		echo '<input type="checkbox">';
+		print_r($doc);
+		echo '<br/>';
+		# code...
+	}
+			print_r($_GET);
+			print_r($_REQUEST);
+
+}
+// add_action( 'media_upload_super_duper', 'wpse_76980_media_upload' );
+
+// add_filter('attachment_fields_to_edit', 'my_plugin_action_button', 20, 2);
+// add_filter('media_send_to_editor', 'my_plugin_image_selected', 10, 3);
+ 
+function my_plugin_action_button($form_fields, $post) {
+ 
+		$send = "<input type='submit' class='button' name='send[$post->ID]' value='" . esc_attr__( 'Use as Default' ) . "' />";
+ 
+	$form_fields['buttons'] = array('tr' => "\t\t<tr class='submit'><td></td><td class='savesend'>$send</td></tr>\n");
+	$form_fields['context'] = array( 'input' => 'hidden', 'value' => 'shiba-gallery-default-image' );
+	return $form_fields;
+}
+ 
+function my_plugin_image_selected($html, $send_id, $attachment) {
+	?>
+	<script type="text/javascript">
+	/* <![CDATA[ */
+	var win = window.dialogArguments || opener || parent || top;
+				 
+	win.jQuery( '#default_image' ).val('<?php echo $send_id;?>');
+	// submit the form
+	win.jQuery( '#shiba-gallery_options' ).submit();
+	/* ]]> */
+	</script>
+	<?php
+	exit();
+}
