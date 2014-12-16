@@ -396,8 +396,9 @@ function ccgn_get_post_form( $group_id = false ){
 	}
 
 	//If the $_POST array is set, we should save the post and redirect to the edit page.
-	if ( $_POST )
+	if ( $_POST ) {
 		ccgn_save_narrative( $group_id );
+	}
 
 	//Edit page functionality
 
@@ -472,16 +473,24 @@ function ccgn_get_post_form( $group_id = false ){
 		<input type="hidden" name="group_id" value="<?php echo $group_id; ?>">
 		<!-- This is created for the media modal to reference 
 		TODO: This doesn't work.-->
-		<input id="post_ID" type="hidden" value="<?php echo $group_id; ?>" name="post_ID">
+		<input id="post_ID" type="hidden" value="<?php echo $post_id; ?>" name="post_ID">
 
 		<input type="hidden" name="post_form_url" value="<?php echo ccgn_get_home_permalink() . "/edit/" . $post_id; ?>">
 		<br />
+		<?php wp_nonce_field( 'edit_group_narrative_' . $post_id ); ?>
 		<input type="submit" value="Save Changes" name="group_narrative_post_submitted" id="submit">
 	</form>
 <?php
 }
 
 function ccgn_save_narrative( $group_id ) {
+	$post_id = isset( $_POST['post_ID'] ) ? $_POST['post_ID'] : 0;
+
+	// First, check the nonce
+	if ( ! check_admin_referer( 'edit_group_narrative_' . $post_id ) ) {
+		return;
+	}
+	
 	//WP's update_post function does a bunch of data cleaning, so we can leave validation to that.
 	$published_status = in_array( $_POST['ccgn_published'], array( 'publish', 'draft' ) ) ? $_POST['ccgn_published'] : 'draft';
 	$title = isset( $_POST['ccgn_title'] ) ? $_POST['ccgn_title'] : 'Draft Narrative';
@@ -498,8 +507,8 @@ function ccgn_save_narrative( $group_id ) {
 	);
 
 	//TODO: When would this ever not be true?
-	if ( $pre_post_id = bp_action_variable( 1 ) )
-		$args['ID'] = $pre_post_id;
+	if ( $post_id )
+		$args['ID'] = $post_id;
 
 	$post_id = wp_update_post( $args );
 
