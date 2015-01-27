@@ -99,7 +99,9 @@ class CC_Group_Narratives {
 		//TODO: finish template stack logic - archive/search template???
 		//TODO: Fails with BP group hierarcy
 		// add_filter( 'bp_located_template', array( $this, 'load_template_filter'), 10, 2 );
-
+		// Redux
+		// Add our templates to BuddyPress' template stack.
+		add_filter( 'bp_get_template_stack', array( $this, 'add_template_stack'), 10, 1 );
 
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_edit_scripts' ), 98 );
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
@@ -673,6 +675,21 @@ class CC_Group_Narratives {
 	*/
 	function get_template_directory() {
 	return apply_filters( 'ccgn_get_template_directory', plugin_dir_path( __FILE__ ) . 'includes/templates' );
+	}
+
+	/**
+	 * Add our templates to BuddyPress' template stack.
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_template_stack( $templates ) {
+	    // if we're on a page of our plugin and the theme is not BP Default, then we
+	    // add our path to the template path array
+	    if ( ccgn_is_component() ) {
+	        $templates[] = trailingslashit( $this->get_template_directory() );
+	    }
+
+	    return $templates;
 	}
 
 	/**

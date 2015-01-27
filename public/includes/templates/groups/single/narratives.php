@@ -1,4 +1,4 @@
-<?php
+	<?php
 	/*
 	* Used to display the list, single and edit view of the Group Narratives pane.
 	*/
@@ -16,6 +16,10 @@
 
         // echo "is single post";
 		$q = new WP_Query( ccgn_get_query() );
+		// echo '<pre>';
+		// print_r($q);
+		// echo '</pre>';
+
 
 		if ( $q->have_posts() ) : 
 
