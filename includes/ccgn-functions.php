@@ -236,18 +236,14 @@ function ccgn_update_categories( $group_id, $cats ){
 	$old_setting = maybe_unserialize( groups_get_groupmeta( $group_id, "ccgn_narrative_tax_terms" ) );
 	$serialized_cats = maybe_serialize( $cats );
 
-	switch ( $serialized_cats ) {
-		case ( $cats == $old_setting ) :
-			// No need to resave settings if they're the same
-			$success = true;
-			break;
-		case ( empty( $serialized_cats ) ) :
-			// Remove existing entries
-			$success = groups_delete_groupmeta( $group_id, "ccgn_narrative_tax_terms" );
-			break;	
-		default:
-			$success = groups_update_groupmeta( $group_id, "ccgn_narrative_tax_terms", $serialized_cats );
-			break;
+	if ( $cats == $old_setting ) {
+		// No need to resave settings if they're the same
+		$success = true;
+	} elseif ( empty( $serialized_cats ) ) {
+		// Remove existing entries
+		$success = groups_delete_groupmeta( $group_id, "ccgn_narrative_tax_terms" );
+	} else {
+		$success = groups_update_groupmeta( $group_id, "ccgn_narrative_tax_terms", $serialized_cats );
 	}
 		
 	return $success;
@@ -269,10 +265,11 @@ function ccgn_update_groupmeta( $group_id = false ) {
 		'ccgn_url_slug'       
 		);
 
-	foreach( $input as $field ) {
+	foreach( $input as $field ) {    
+
 		//groups_update_groupmeta returns false if the old value matches the new value, so we'll need to check for that case
 		$old_setting = groups_get_groupmeta( $group_id, $field );
-		$new_setting = ( isset( $_POST[$field] ) ) ? $_POST[$field] : '' ;
+		$new_setting = ( isset( $_POST[$field] ) ) ? $_POST[$field] : null ;
 
 		// Filter the slug on save
 		// TODO: Don't use this slug for the Admin pane . Maybe not possible with current BP? 
@@ -281,18 +278,14 @@ function ccgn_update_groupmeta( $group_id = false ) {
 			$new_setting = sanitize_title( $new_setting );
 		}
 
-		switch ( $new_setting ) {
-			case ( $new_setting == $old_setting ) :
-				// No need to resave settings if they're the same
-				$success = true;
-				break;
-			case ( empty( $new_setting ) ) :
-				// Remove existing entries
-				$success = groups_delete_groupmeta( $group_id, $field );
-				break;	
-			default:
-				$success = groups_update_groupmeta( $group_id, $field, $new_setting );
-				break;
+		if ( $new_setting == $old_setting ) {
+			// No need to resave settings if they're the same
+			$success = true;
+		} elseif ( empty( $new_setting ) ) {
+			// Remove existing entries
+			$success = groups_delete_groupmeta( $group_id, $field );
+		} else {
+			$success = groups_update_groupmeta( $group_id, $field, $new_setting );
 		}
 		
 	}
@@ -307,7 +300,7 @@ function ccgn_update_groupmeta( $group_id = false ) {
 function ccgn_get_query( $group_id = null, $status = null ) {
 
   	// For single post, get the post by the slug
-	if( ccgn_is_single_post() ){
+	if ( ccgn_is_single_post() ){
 		$query = array(
 			'name' => bp_action_variable( 0 ),
 			'post_type' => 'group_story',
@@ -331,16 +324,16 @@ function ccgn_get_query( $group_id = null, $status = null ) {
 				)
 			)
 		);
+	}
 
-		// If the status is specified, respect it, otherwise use the user's abilities to determine.
-		if ( $status == 'draft' ) {
-			$query['post_status'] = array( 'publish', 'draft');
-		} else if ( $status == 'publish' ) {
-			$query['post_status'] = array( 'publish' );
-		} else {
-			// Get draft posts for those who can edit, otherwise only show published stories
-			$query['post_status'] = ccgn_current_user_can_post() ? array( 'publish', 'draft') : array( 'publish' );
-		}
+	// If the status is specified, respect it, otherwise use the user's abilities to determine.
+	if ( $status == 'draft' ) {
+		$query['post_status'] = array( 'publish', 'draft');
+	} elseif ( $status == 'publish' ) {
+		$query['post_status'] = array( 'publish' );
+	} else {
+		// Get draft posts for those who can edit, otherwise only show published stories
+		$query['post_status'] = ccgn_current_user_can_post() ? array( 'publish', 'draft') : array( 'publish' );
 	}
 
 	return apply_filters( "ccgn_get_query", $query );
