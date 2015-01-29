@@ -37,7 +37,7 @@ class CC_Group_Narratives_Extension extends BP_Group_Extension {
 				parent::init( $args );
 		}
  
-		public function display() {
+		public function display( $group_id = null ) {
 			// Template location is handled via the template stack. see ccgn_load_template_filter()
 
 			bp_get_template_part( 'groups/single/narratives' );
