@@ -107,7 +107,7 @@ class CC_Group_Narratives {
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_scripts' ), 98 );
 		// add_filter('media_view_strings', array( $this, 'custom_media_strings' ), 10, 2);
 		// add_action( 'wp_footer', array( $this, 'print_media_controller_templates' ), 98 );
-		
+
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_media_stripped_scripts' ), 98 );
 		// add_filter( 'media_view_settings', array( $this, 'my_media_view_settings'), 10, 2  );
 		// Override relevant media manager javascript functions
@@ -121,7 +121,7 @@ class CC_Group_Narratives {
 		// add_filter( '@TODO', array( $this, 'filter_method_name' ) );
 
 		// @TODOs: Features to add
-		// Post locking while the post is being edited. 
+		// Post locking while the post is being edited.
 			// Set a transient on loading the form (match the transient set by the typical WP editor)
 			// Clear it on page unload. How to avoid fogotten locks? heartbeat API?
 		// Activity stream updates:
@@ -330,31 +330,31 @@ class CC_Group_Narratives {
 	 */
 	public function register_cpt_group_story() {
 
-	    $labels = array( 
-	        'name' => _x( 'Group Stories', 'group_story' ),
-	        'singular_name' => _x( 'Group Story', 'group_story' ),
+	    $labels = array(
+	        'name' => _x( 'Hub Stories', 'group_story' ),
+	        'singular_name' => _x( 'Hub Story', 'group_story' ),
 	        'add_new' => _x( 'Add New', 'group_story' ),
-	        'add_new_item' => _x( 'Add New Group Story', 'group_story' ),
-	        'edit_item' => _x( 'Edit Group Story', 'group_story' ),
-	        'new_item' => _x( 'New Group Story', 'group_story' ),
-	        'view_item' => _x( 'View Group Story', 'group_story' ),
-	        'search_items' => _x( 'Search Group Stories', 'group_story' ),
-	        'not_found' => _x( 'No group stories found', 'group_story' ),
-	        'not_found_in_trash' => _x( 'No group stories found in Trash', 'group_story' ),
-	        'parent_item_colon' => _x( 'Parent Group Story:', 'group_story' ),
-	        'menu_name' => _x( 'Group Stories', 'group_story' ),
+	        'add_new_item' => _x( 'Add New Hub Story', 'group_story' ),
+	        'edit_item' => _x( 'Edit Hub Story', 'group_story' ),
+	        'new_item' => _x( 'New Hub Story', 'group_story' ),
+	        'view_item' => _x( 'View Hub Story', 'group_story' ),
+	        'search_items' => _x( 'Search Hub Stories', 'group_story' ),
+	        'not_found' => _x( 'No hub stories found', 'group_story' ),
+	        'not_found_in_trash' => _x( 'No hub stories found in Trash', 'group_story' ),
+	        'parent_item_colon' => _x( 'Parent Hub Story:', 'group_story' ),
+	        'menu_name' => _x( 'Hub Stories', 'group_story' ),
 	    );
 
-	    $args = array( 
+	    $args = array(
 	        'labels' => $labels,
 	        'hierarchical' => false,
-	        'description' => 'Used to collect new posts ("Narratives") from spaces.',
+	        'description' => 'Used to collect new posts ("Narratives") from groups.',
 	        'supports' => array( 'title', 'editor', 'author', 'revisions', 'comments' ),
 	        'taxonomies' => array( 'post_tag', 'ccgn_related_groups' ),
 	        'public' => true,
 	        'show_ui' => true,
 	        'show_in_menu' => true,
-	        'menu_position' => 37,
+	        'menu_position' => 52,
 	        'show_in_nav_menus' => true,
 	        'publicly_queryable' => true,
 	        'exclude_from_search' => false,
@@ -375,7 +375,7 @@ class CC_Group_Narratives {
 	 */
 	public function register_taxonomy_related_groups() {
 
-	    $labels = array( 
+	    $labels = array(
 	        'name' => _x( 'CCGN Related Groups', 'related_groups' ),
 	        'singular_name' => _x( 'Related Group', 'related_groups' ),
 	        'search_items' => _x( 'Search Related Groups', 'related_groups' ),
@@ -393,7 +393,7 @@ class CC_Group_Narratives {
 	        'menu_name' => _x( 'CCGN Related Groups', 'related_groups' ),
 	    );
 
-	    $args = array( 
+	    $args = array(
 	        'labels' => $labels,
 	        'public' => true,
 	        'show_in_nav_menus' => true,
@@ -414,7 +414,7 @@ class CC_Group_Narratives {
 	 * @since    1.0.0
 	 */
 	function narrative_permalink_filter( $permalink, $post ) {
-	 
+
 	    if ( 'group_story' == get_post_type( $post )  ) {
 	    	$group_id = ccgn_get_origin_group( $post->ID );
 	        $permalink = ccgn_get_base_permalink( $group_id ) . $post->post_name;
@@ -534,12 +534,12 @@ class CC_Group_Narratives {
 			bp_core_redirect( wp_get_referer() );
 
 			return false;
-		} 
+		}
 
 	}
 
 	/**
-	 * We need to stop the evaluation of shortcodes on this plugin's group settings screen. 
+	 * We need to stop the evaluation of shortcodes on this plugin's group settings screen.
 	 * If they're interpreted for display, then the code is consumed and lost upon the next save.
 	 *
 	 * @since    1.0.0
@@ -551,7 +551,7 @@ class CC_Group_Narratives {
 	}
 
 	/**
-	 * Add a hidden "redirect_to" input on the comment form if it's a group story 
+	 * Add a hidden "redirect_to" input on the comment form if it's a group story
 	 * This ensures that commenters are returned to the url they commented from.
 	 * (And not swept away to the origin group's view of the post.)
 	 *
@@ -564,7 +564,7 @@ class CC_Group_Narratives {
 		$current_url = home_url( $_SERVER['REQUEST_URI'] );
 		?>
 		<input type="hidden" name="redirect_to" value="<?php echo $current_url ?>" />
-		<?php 
+		<?php
 	}
 
 	/**
@@ -584,17 +584,17 @@ class CC_Group_Narratives {
 	 *
 	 * @since    1.0.0
 	 */
-	public function setup_map_meta_cap( $primitive_caps, $meta_cap, $user_id, $args ) {	
+	public function setup_map_meta_cap( $primitive_caps, $meta_cap, $user_id, $args ) {
 		// In order to upload media, a user needs to have caps.
-		// Check if this is a request we want to filter. 
-		if ( ! in_array( $meta_cap, array( 'upload_files', 'edit_post', 'delete_post' ) ) ) {  
-	        return $primitive_caps;  
+		// Check if this is a request we want to filter.
+		if ( ! in_array( $meta_cap, array( 'upload_files', 'edit_post', 'delete_post' ) ) ) {
+	        return $primitive_caps;
 	    }
 
 		// It would be useful for a user to be able to delete her own uploaded media.
 	    // If this is someone else's post, we don't want to allow deletion of that, though.
 	    if ( $meta_cap == 'delete_post' && in_array( 'delete_others_posts', $primitive_caps ) ) {
-	        return $primitive_caps;  
+	        return $primitive_caps;
 	    }
 
 	  	// We pass a blank array back, meaning there's no capability required.
@@ -610,7 +610,7 @@ class CC_Group_Narratives {
 	 * @since    1.0.0
 	 */
 	public function show_users_own_attachments( $wp_query_obj ) {
-	 
+
 		// The image library is populated via an AJAX request, so we'll check for that
 		if( isset( $_POST['action'] ) && $_POST['action'] == 'query-attachments' ) {
 
@@ -651,7 +651,7 @@ class CC_Group_Narratives {
 		}
 
 		// Register our theme compat directory.
-		// This tells BP to look for templates in our plugin directory 
+		// This tells BP to look for templates in our plugin directory
 		// if the template isn't found in the parent/child theme.
 		bp_register_template_stack( array( $this, 'get_template_directory' ), 14 );
 
@@ -705,11 +705,11 @@ class CC_Group_Narratives {
 		if ( ! ccgn_is_post_edit() )
 			return $query;
 
-	    // $towrite = PHP_EOL . 'group id: ' . print_r( bp_get_current_group_id(), TRUE );    
+	    // $towrite = PHP_EOL . 'group id: ' . print_r( bp_get_current_group_id(), TRUE );
 	    // $towrite .= PHP_EOL . 'query, before' .  print_r($query, TRUE);
 	    // Limit the post types that are queried
 	    // We'll want to include bp_docs and group_stories, but they have weird queries (group-related) so we'll add them back in at the 'wp_link_query' filter.
-	    $query['post_type'] = array(); 
+	    $query['post_type'] = array();
 
    	    // If the search is included in the query, wp will find nothing and things break. Nice.
    	    if ( isset( $query['s'] ) ) {
@@ -717,7 +717,7 @@ class CC_Group_Narratives {
 	   	    unset( $query['s'] );
 	   	}
 
-   	 //    $towrite .= PHP_EOL . 'query, after' .  print_r($query, TRUE);    
+   	 //    $towrite .= PHP_EOL . 'query, after' .  print_r($query, TRUE);
  	   //  $fp = fopen('link-to.txt', 'a');
 	    // fwrite($fp, $towrite);
 	    // fclose($fp);
@@ -771,14 +771,14 @@ class CC_Group_Narratives {
 		$results = array_slice( $results, $query['offset'], $query['posts_per_page'] );
 
 	    // $towrite = PHP_EOL . 'results' . print_r($results, TRUE);
-   	    // $towrite .= PHP_EOL . 'query' . print_r($query, TRUE);    
+   	    // $towrite .= PHP_EOL . 'query' . print_r($query, TRUE);
   	    // $fp = fopen('link-to.txt', 'a');
 	    // fwrite($fp, $towrite);
 	    // fclose($fp);
 
 	    return $results;
 	}
-	
+
 	/* Work on media popup below ******************************************/
 
 
@@ -833,25 +833,25 @@ class CC_Group_Narratives {
 	}
 
 	public function my_media_view_settings($settings, $post) {
-    $towrite = PHP_EOL . 'before assignment: ' . print_r($settings, TRUE);    
+    $towrite = PHP_EOL . 'before assignment: ' . print_r($settings, TRUE);
     $fp = fopen('media_view_settings.txt', 'a');
     fwrite($fp, $towrite);
     fclose($fp);
 
 	    $post_types = array('post' => 'Posts', 'page' => 'Pages');
-	     
+
 	    // Add in post types
 	    foreach ($post_types as $slug => $label) {
 	        if ($slug == 'attachment') continue;
-	        $settings['postTypes'][$slug] = $label; 
+	        $settings['postTypes'][$slug] = $label;
 	    }
 
-    $towrite = PHP_EOL . 'after assignment: ' . print_r($settings, TRUE);    
+    $towrite = PHP_EOL . 'after assignment: ' . print_r($settings, TRUE);
     $fp = fopen('media_view_settings.txt', 'a');
     fwrite($fp, $towrite);
     fclose($fp);
 
-	    return $settings;   
+	    return $settings;
 	}
 
 	public function my_override_filter_object() { ?>
@@ -864,7 +864,7 @@ class CC_Group_Narratives {
 	            text;
 	        if ( types && type )
 	            text = types[ type ];
-	 
+
 	        filters = {
 	            all: {
 	                text:  text || l10n.allMediaItems,
@@ -875,7 +875,7 @@ class CC_Group_Narratives {
 	                },
 	                priority: 10
 	            },
-	 
+
 	            uploaded: {
 	                text:  l10n.uploadedToThisPost,
 	                props: {
@@ -912,42 +912,42 @@ class CC_Group_Narratives {
 	            });
 	        }
 	        this.filters = filters;
-	         
+
 	    }; // End create filters
 	    </script>
-	<?php 
+	<?php
 	}
 
 	public function my_wp_ajax_query_attachments() {
 	    if ( ! current_user_can( 'upload_files' ) )
 	        wp_send_json_error();
-	 
+
 	    $query = isset( $_REQUEST['query'] ) ? (array) $_REQUEST['query'] : array();
 	    $query = array_intersect_key( $query, array_flip( array(
 	        's', 'order', 'orderby', 'posts_per_page', 'paged', 'post_mime_type',
 	        'post_parent', 'post__in', 'post__not_in',
 	    ) ) );
-	 
+
 	    if (isset($query['post_mime_type']) && ($query['post_mime_type'] != "image")) {
 	        // post type
 	        $query['post_type'] = $query['post_mime_type'];
 	        $query['post_status'] = 'publish';
 	        unset($query['post_mime_type']);
-	    } else { 
+	    } else {
 	        // image
 	        $query['post_type'] = 'attachment';
 	        $query['post_status'] = 'inherit';
 	        if ( current_user_can( get_post_type_object( 'attachment' )->cap->read_private_posts ) )
 	            $query['post_status'] .= ',private';
 	    }
-	     
+
 	    $query = apply_filters( 'ajax_query_attachments_args', $query );
 	    $query = new WP_Query( $query );
-	 
+
 	    // $posts = array_map( 'wp_prepare_attachment_for_js', $query->posts );
 	    $posts = array_map( $this->my_prepare_items_for_js, $query->posts );
 	    $posts = array_filter( $posts );
-	 
+
 	    wp_send_json_success( $posts );
 	}
 
@@ -962,26 +962,26 @@ class CC_Group_Narratives {
 	        return $this->my_prepare_post_for_js($item);
 	    }
 	}
- 
+
 	function my_prepare_post_for_js( $post ) {
 	    if ( ! $post = get_post( $post ) )
 	        return;
-	 
+
 	    $attachment_id = get_post_thumbnail_id( $post->ID );
 	    $attachment = get_post($attachment_id);
 	    $post_link = get_permalink( $post->ID );
-	 
+
 	    $type = $post->post_type; $subtype = 'none';
 	    if ($attachment) {
 	        $url = wp_get_attachment_url( $attachment->ID );
 	    } else { // Show default image
 	        $url = includes_url('images/crystal/default.png');
 	    }
-	     
+
 	    $response = array(
 	        'id'          => $post->ID,
-	        'title'       => $post->post_title, 
-	        'filename'    => wp_basename( $post_link ), 
+	        'title'       => $post->post_title,
+	        'filename'    => wp_basename( $post_link ),
 	        'url'         => $url,
 	        'link'        => $post_link,
 	        'alt'         => '',
@@ -1005,9 +1005,9 @@ class CC_Group_Narratives {
 	        ),
 	        'editLink'   => false,
 	    );
-	 
+
 	    // Don't allow delete or update for posts. So don't create nonces.
-	     
+
 	    return apply_filters( 'wp_prepare_post_for_js', $response, $post );
 	}
 	*/
