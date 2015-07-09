@@ -14,11 +14,11 @@
 //sub menu
 function ccgn_options_menu() {
 	?>
-    <li <?php if ( ccgn_is_home () ) : ?> 
+    <li <?php if ( ccgn_is_home () ) : ?>
 		class="current"<?php endif;?>><a href="<?php echo ccgn_get_home_permalink(); ?>">Narratives</a>
 	</li>
     <?php if( ccgn_current_user_can_post() ): ?>
-        <li <?php if( ccgn_is_post_edit() ): ?> 
+        <li <?php if( ccgn_is_post_edit() ): ?>
         	class="current"<?php endif;?>><a href="<?php echo ccgn_get_home_permalink(); ?>/edit">Create New Narrative</a>
         </li>
   <?php endif;?>
@@ -27,7 +27,7 @@ function ccgn_options_menu() {
 
 /**
  * Generates the possible syndication groups taxonomy list on the post create/edit screen.
- * 
+ *
  * @return Unordered list of checkboxes showing terms available for assignment.
  */
 function ccgn_related_group_checkboxes( $group_id, $post_id ) {
@@ -39,7 +39,7 @@ function ccgn_related_group_checkboxes( $group_id, $post_id ) {
     if ( empty( $possibly_related_groups ) ){
              _e('This group has no categories associated with it. To post to group blog, first associate one or more categories with it.','bcg');
             return;
-    } else { 
+    } else {
         // Get this group's term; we'll always want it to be checked for UI transparency
         $home_group_term_id = ccgn_get_group_term_id( $group_id );
         ?>
@@ -56,7 +56,7 @@ function ccgn_related_group_checkboxes( $group_id, $post_id ) {
     	}
         ?>
         </ul>
-        <?php 
+        <?php
     }
 }
 function ccgn_group_origin_statement( $post_id = null ) {

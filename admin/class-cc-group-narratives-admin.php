@@ -252,14 +252,14 @@ class CC_Group_Narratives_Admin {
      */
     public function add_meta_box() {
 
-        add_meta_box( 
-            $this->meta_box_name, 
-            'Related Docs', 
-            array( $this, 'render_meta_box_content' ), 
-            'group_story', 
-            'normal', 
+        add_meta_box(
+            $this->meta_box_name,
+            'Related Docs',
+            array( $this, 'render_meta_box_content' ),
+            'group_story',
+            'normal',
             'high'
-            ); 
+            );
     }
 
     /**
@@ -268,7 +268,7 @@ class CC_Group_Narratives_Admin {
      * @param WP_Post $post The post object.
      */
     public function render_meta_box_content( $post ) {
-    
+
         // Add an nonce field so we can check for it later.
         wp_nonce_field( $this->meta_box_name, $this->nonce );
 
@@ -278,7 +278,7 @@ class CC_Group_Narratives_Admin {
         $doc_associations = get_post_meta( $post->ID, $meta_field, true ); // Use true to actually get an unserialized array back
 
         // Get candidate docs: must be associated with the group, must be readable by anyone. We can search for docs that are associated with the group, then in the while loop ignore those with privacy not "read:anyone"
-        
+
         //This assumes that each group only has one associated category, otherwise we'll have docs crossing over.
         $category_ids = wp_get_post_terms($post->ID, 'related_groups', array("fields" => "ids"));
         $group_ids = $this->get_group_ids( $category_ids[0] );
@@ -288,14 +288,14 @@ class CC_Group_Narratives_Admin {
         echo '<p class="howto">In order to associate a document with a group story, the doc must be able to be read by anyone and be associated with the group that is producing the story.</p>';
         if ( bp_docs_has_docs( $docs_args ) ) :
             echo '<ul>';
-            while ( bp_docs_has_docs() ) : 
+            while ( bp_docs_has_docs() ) :
                 bp_docs_the_doc();
                 //Only allow to attach docs that have read set to anyone.
                 // $doc = get_post();
                 // print_r($doc);
                 $doc_id = get_the_ID();
                 $settings = bp_docs_get_doc_settings( $doc_id );
-                if ( $settings['read'] == 'anyone') { 
+                if ( $settings['read'] == 'anyone') {
                     ?>
                     <li>
                         <input type="checkbox" id="<?php echo $meta_field; ?>-<?php echo $doc_id; ?>" name="<?php echo $meta_field; ?>[]" value="<?php echo $doc_id; ?>" <?php checked( in_array( $doc_id , $doc_associations ) ); ?> />
@@ -305,9 +305,9 @@ class CC_Group_Narratives_Admin {
                     // the_title();
                     // echo '<pre>' . PHP_EOL;
                     // print_r($settings);
-                    // echo '</pre>';                
+                    // echo '</pre>';
                 }
-                
+
             endwhile;
             echo '</ul>';
         endif;
@@ -327,7 +327,7 @@ class CC_Group_Narratives_Admin {
      * @param int $post_id The ID of the post being saved.
      */
     public function meta_save( $post_id ) {
-    
+
         /*
          * We need to verify this came from the our screen and with proper authorization,
          * because save_post can be triggered at other times.
@@ -337,7 +337,7 @@ class CC_Group_Narratives_Admin {
         if( get_post_type( $post_id ) == 'group_story' && $this->user_can_save( $post_id, $this->nonce ) ) {
 
             $meta_field = 'group_story_related_docs';
-                    
+
             // Sanitize the user input.
             // $input = sanitize_text_field( $_POST[ $meta_field ] );
 
@@ -371,7 +371,7 @@ class CC_Group_Narratives_Admin {
      * @param       bool                Whether or not the user has the ability to save this post.
      */
     public function user_can_save( $post_id, $nonce ) {
-        
+
         // Don't save if the user hasn't submitted the changes
         if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
             return false;
@@ -390,7 +390,7 @@ class CC_Group_Narratives_Admin {
         // } // end if/else
 
         return true;
-     
+
     } // end user_can_save
 
     public function get_group_ids( $category_id ) {
@@ -400,9 +400,9 @@ class CC_Group_Narratives_Admin {
         global $wpdb, $bp;
         // We want to look for meta_value LIKE '%\"1132\"%' so weve got to do some wrapping
         $category_id = '%"' . $category_id . '"%';
- 
+
         $sql = $wpdb->prepare( "SELECT group_id FROM {$bp->groups->table_name_groupmeta} WHERE meta_key = %s AND meta_value LIKE %s", 'group_blog_cats', $category_id );
- 
+
         return wp_parse_id_list( $wpdb->get_col( $sql ) );
     }
 
