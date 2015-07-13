@@ -508,28 +508,108 @@ function ccgn_save_narrative( $group_id ) {
 	//If successful save, do some other things, like taxonomies
 
 	if ( $post_id ) {
+		$old_group_relations = ccgn_get_associated_group_ids( $post_id );
 
 		//Set the "related groups" terms
 		$related_groups = ( $_POST['related-groups'] ) ? array_map( 'intval', (array) $_POST['related-groups'] ) : array();
 		// Make sure that this group's term is always included
-		// $home_group_term_id = ccgn_get_group_term_id( $group_id );
-
 		$related_groups = ccgn_add_this_group_term( $related_groups, ccgn_get_group_term_id( $group_id ) );
 
-		// First, clear terms
-		wp_set_object_terms( $post_id, NULL, 'ccgn_related_groups' );
-		// Then, set the terms for the new post
+		// Set the terms for the new post
 		wp_set_object_terms( $post_id, $related_groups, 'ccgn_related_groups' );
 
 		// Set some meta with the id of the group that created this post
 		if ( $group_id = ( $_POST['group_id'] ) ? intval( $_POST['group_id'] ) : bp_get_current_group_id() ) {
-			//
 			update_post_meta( $post_id, 'ccgn_origin_group', $group_id );
 		}
 
+		$new_group_relations = ccgn_get_associated_group_ids( $post_id );
+
+		// If the post was removed from a group, we remove that group's activity item.
+		$removed_group_ids = array_diff( $old_group_relations, $new_group_relations );
+		if ( ! empty( $removed_group_ids ) ) {
+			foreach ( $removed_group_ids as $removed_group_id ) {
+				bp_activity_delete( array(
+					'component'         => buddypress()->groups->id,
+					'type'              => 'group_story_created',
+					'item_id'           => $removed_group_id,
+					'secondary_item_id' => $post_id,
+					) );
+			}
+		}
+
+		// Make sure that the each of the syndicated groups has an activity item.
+		if ( 'publish' == $published_status ) {
+			ccgn_create_activity_items( $post_id );
+		}
 	}
 }
 
+function ccgn_create_activity_items( $post_id ) {
+	$bp = buddypress();
+
+	// We want to fetch the saved post, because WP has done some filtering on save.
+	$post_object = get_post( $post_id );
+
+	$author_id = (int) $post_object->post_author;
+	$user_link = bp_core_get_userlink( $author_id );
+
+	$post_type_object = get_post_type_object( $post_object->post_type );
+	$post_type_label = strtolower( $post_type_object->labels->singular_name );
+
+	// A single narrative may be associated with more than one group
+	$origin_group_id = ccgn_get_origin_group( $post_id );
+	$associated_groups = ccgn_get_associated_group_ids( $post_id );
+	$type = $post_object->post_type . '_created';
+
+	foreach ( $associated_groups as $group_id ) {
+		// Does an activity item already exist?
+		$exists = bp_activity_get_activity_id( array(
+			'component'         => $bp->groups->id,
+			'type'              => $type,
+			'item_id'           => $group_id,
+			'secondary_item_id' => $post_id,
+			) );
+
+		if ( ! empty( $exists ) ) {
+			continue;
+		}
+
+		// Create a post url that is relative to this group.
+		$post_url = trailingslashit( ccgn_get_home_permalink( $group_id ) ) . $post_object->post_name;
+		$post_link = sprintf( '<a href="%s">%s</a>', $post_url, $post_object->post_title );
+
+		$group = groups_get_group( array( 'group_id' => $group_id ) );
+		$group_url  = bp_get_group_permalink( $group );
+		$group_link = '<a href="' . $group_url . '">' . $group->name . '</a>';
+
+		// Only set hide_sitewide to false if this is the origin group and it is a public group.
+		if ( $group_id == $origin_group_id && 'public' == bp_get_group_status( $group ) ) {
+			$hide_sitewide = false;
+		} else {
+			$hide_sitewide = true;
+		}
+
+		$action = sprintf( __( '%1$s published the %2$s %3$s in the Hub %4$s', 'cc-group-narratives' ), $user_link, $post_type_label, $post_link, $group_link );
+
+		$args = array(
+			'user_id'		=> $author_id,
+			'action'		=> $action,
+			'primary_link'	=> $post_link,
+			'component'		=> $bp->groups->id,
+			'type'			=> $type,
+			'item_id'		=> $group_id, // Set to the group id
+			'secondary_item_id'	=> $post_id, // The id of the narrative itself
+			'recorded_time'		=> $post_object->post_date,
+			'hide_sitewide'		=> $hide_sitewide,
+			'content'			=> bp_create_excerpt( $post_object->post_content, 358 )
+		);
+
+		do_action( $post_object->post_type . '_before_activity_save', $args );
+
+		$activity_id = bp_activity_add( apply_filters( $post_object->post_type . '_activity_args', $args, $post_id ) );
+	}
+}
 
 // Helper function to build the taxonomy slug
 function ccgn_create_taxonomy_slug( $group_id = null ) {
@@ -594,7 +674,22 @@ function ccgn_get_narratives_for_group( $group_id = null, $status = null  ) {
 	$posts = get_posts( ccgn_get_query( $group_id, $status ) );
 
 	return $posts;
-} 
+}
+
+/**
+* Get an array of associated group ids for a particular narrative.
+*
+* @since 1.1.0
+* @param int $post_id
+* @return array of group_ids as integers
+*/
+function ccgn_get_associated_group_ids( $post_id = 0 ) {
+	$related_term_slugs = wp_get_post_terms( $post_id, 'ccgn_related_groups',  array( "fields" => "slugs" ) );
+
+	$group_ids = str_replace( 'ccgn_related_group_', '', $related_term_slugs );
+
+	return array_map( 'intval', $group_ids);
+}
 
 // Media modal functionality - probably not helpful
 function wpse_76980_add_upload_tab( $tabs ) {

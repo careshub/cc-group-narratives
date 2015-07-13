@@ -89,6 +89,9 @@ class CC_Group_Narratives {
 		// Typically the user is redirected to the permalink location, but, in this case, we want to redirect back to the referring page (the permalink might go to a different group).
 		add_action( 'comment_form', array( $this, 'comments_add_redirect_to' ) );
 
+		// Delete activity stream items when narrative are deleted.
+		add_action( 'transition_post_status', array( $this, 'delete_post_activity' ), 10, 3 );
+
 		/* Filter "map_meta_caps" to let our users do things they normally can't, like upload media */
 		add_action( 'bp_init', array( $this, 'add_mmc_filter') );
 
@@ -521,8 +524,20 @@ class CC_Group_Narratives {
 				return false;
 
 		   	// Get this group's term and disassociate it from the post
-		    if ( $group_term_id = ccgn_get_group_term_id() )
+		    if ( $group_term_id = ccgn_get_group_term_id() ) {
 		    	$success = wp_remove_object_terms( $post_id, $group_term_id, 'ccgn_related_groups' );
+		    }
+		    // On successful removal, we should delete related activity items.
+	    	if ( $success ) {
+	    		if ( $group_id = bp_get_current_group_id() ) {
+		    		bp_activity_delete( array(
+						'component'         => buddypress()->groups->id,
+						'type'              => 'group_story_created',
+						'item_id'           => $group_id,
+						'secondary_item_id' => $post_id,
+						) );
+		    	}
+	    	}
 
 		    if ( $success && ! is_wp_error( $success ) ) {
    				bp_core_add_message( __( 'Successfully removed the item.', $this->plugin_slug ) );
@@ -558,13 +573,43 @@ class CC_Group_Narratives {
 	 * @since    1.0.0
 	 */
 	public function comments_add_redirect_to( $post_id ){
-		if ( 'group_story' != get_post_type( $post )  )
+		if ( 'group_story' != get_post_type( $post_id )  )
 			return;
 
 		$current_url = home_url( $_SERVER['REQUEST_URI'] );
 		?>
 		<input type="hidden" name="redirect_to" value="<?php echo $current_url ?>" />
 		<?php
+	}
+
+	/**
+	 * Delete activity associated with a post
+	 *
+	 * Run on transition_post_status, to catch deletes from all locations
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $new_status
+	 * @param string $old_status
+	 * @param obj WP_Post object
+	 */
+	public function delete_post_activity( $new_status, $old_status, $post ) {
+
+		// Only work on group_narrative post types
+		if ( 'group_story' != $post->post_type ) {
+			return;
+		}
+
+		// Only when they change from publish. Fire on change to trash, draft.
+		if ( ! ( $new_status != 'publish' && $old_status == 'publish' ) ) {
+			return;
+		}
+
+		bp_activity_delete( array(
+			'component'         => buddypress()->groups->id,
+			'type'              => $post->post_type . '_created',
+			'secondary_item_id' => $post->ID,
+			) );
 	}
 
 	/**
