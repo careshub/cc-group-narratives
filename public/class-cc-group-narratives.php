@@ -96,7 +96,7 @@ class CC_Group_Narratives {
 		add_action( 'bp_init', array( $this, 'add_mmc_filter') );
 
 		/* Only allow users to see their own items in the media library uploader. */
-		add_action( 'pre_get_posts', array( $this, 'show_users_own_attachments') );
+		// This functionality is shared between several plugins and has been moved to a standalone plugin "CC Manage Media and Permissions"
 
 		//Filter plugin template
 		//TODO: finish template stack logic - archive/search template???
@@ -646,24 +646,6 @@ class CC_Group_Narratives {
 	    $primitive_caps = array();
 
 		return $primitive_caps;
-	}
-
-
-	/**
-	 * Only allow users to see their own items in the media library uploader.
-	 *
-	 * @since    1.0.0
-	 */
-	public function show_users_own_attachments( $wp_query_obj ) {
-
-		// The image library is populated via an AJAX request, so we'll check for that
-		if( isset( $_POST['action'] ) && $_POST['action'] == 'query-attachments' ) {
-
-			// If the user isn't a site admin, limit the image library to only show his images.
-			if( ! current_user_can( 'delete_pages' ) )
-			    $wp_query_obj->set( 'author', get_current_user_id() );
-
-		}
 	}
 
 	/** TEMPLATE LOADER ************************************************/

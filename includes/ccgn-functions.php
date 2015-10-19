@@ -217,11 +217,11 @@ function ccgn_get_origin_group( $post_id = null ) {
 
 	$origin_group = get_post_meta( $post_id, 'ccgn_origin_group', true );
 	// If not set, assume that the current group is the origin
-	if ( ! $origin_group )
+	if ( ! $origin_group ) {
 		$origin_group = bp_get_current_group_id();
+	}
 
 	return (int) $origin_group;
-
 }
 
 /**
